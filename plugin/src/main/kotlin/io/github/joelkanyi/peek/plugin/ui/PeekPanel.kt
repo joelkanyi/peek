@@ -4,11 +4,13 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import io.github.joelkanyi.peek.core.error.PeekError
@@ -51,7 +53,10 @@ internal class PeekPanel(project: Project) {
     private val deviceCombo = ComboBox<Device>().apply {
         renderer = SimpleListCellRenderer.create("") { "${it.model} (${it.serial})" }
     }
-    private val appCombo = ComboBox<String>().apply { isEditable = true }
+    private val appField = JBTextField(22).apply {
+        emptyText.text = PeekBundle.message("peek.hint.app")
+    }
+    private val appsButton = JButton(PeekBundle.message("peek.action.apps"))
     private val refreshButton = JButton(PeekBundle.message("peek.action.refresh"))
     private val statusLabel = JBLabel()
 
@@ -64,6 +69,7 @@ internal class PeekPanel(project: Project) {
     private val table = JBTable(tableModel)
 
     private var suppressEvents = false
+    private var installedApps: List<String> = emptyList()
     private var session: PeekSession? = null
     private var collectJob: Job? = null
 
@@ -80,7 +86,8 @@ internal class PeekPanel(project: Project) {
             add(JBLabel(PeekBundle.message("peek.label.device")))
             add(deviceCombo)
             add(JBLabel(PeekBundle.message("peek.label.app")))
-            add(appCombo)
+            add(appField)
+            add(appsButton)
             add(refreshButton)
         }
         statusLabel.border = JBUI.Borders.empty(4, 8)
@@ -95,7 +102,8 @@ internal class PeekPanel(project: Project) {
         root.add(statusLabel, BorderLayout.SOUTH)
 
         deviceCombo.addActionListener { if (!suppressEvents) onDeviceChosen() }
-        appCombo.addActionListener { if (!suppressEvents) onRefresh() } // load stores as soon as an app is chosen
+        appsButton.addActionListener { chooseApp() }
+        appField.addActionListener { onRefresh() } // Enter loads
         storeList.addListSelectionListener { if (!it.valueIsAdjusting && !suppressEvents) showSelectedStore() }
         refreshButton.addActionListener { onRefresh() }
 
@@ -116,20 +124,37 @@ internal class PeekPanel(project: Project) {
 
     private fun onDeviceChosen() {
         val device = deviceCombo.selectedItem as? Device ?: return
+        clearStores()
+        appField.text = ""
+        status(PeekBundle.message("peek.status.loadingApps"))
         scope.launch {
             val apps = runCatching { transport!!.listDebuggableProcesses(device) }.getOrDefault(emptyList())
             withContext(Dispatchers.EDT) {
-                suppressEvents = true
-                appCombo.model = DefaultComboBoxModel(apps.map { it.packageName }.toTypedArray())
-                appCombo.selectedItem = null
-                suppressEvents = false
+                installedApps = apps.map { it.packageName }
+                status(PeekBundle.message("peek.status.pickApp"))
             }
         }
     }
 
+    private fun chooseApp() {
+        if (installedApps.isEmpty()) {
+            status(PeekBundle.message("peek.status.pickDevice"))
+            return
+        }
+        JBPopupFactory.getInstance()
+            .createPopupChooserBuilder(installedApps)
+            .setTitle(PeekBundle.message("peek.popup.apps"))
+            .setItemChosenCallback { pkg ->
+                appField.text = pkg
+                onRefresh()
+            }
+            .createPopup()
+            .showUnderneathOf(appsButton)
+    }
+
     private fun onRefresh() {
         val device = deviceCombo.selectedItem as? Device ?: run { status(PeekBundle.message("peek.status.pickDevice")); return }
-        val packageName = (appCombo.editor.item ?: appCombo.selectedItem)?.toString()?.trim().orEmpty()
+        val packageName = appField.text.trim()
         if (packageName.isEmpty()) { status(PeekBundle.message("peek.status.pickApp")); return }
         startSession(device, AppPackage(packageName, pid = null))
     }
@@ -137,6 +162,8 @@ internal class PeekPanel(project: Project) {
     private fun startSession(device: Device, pkg: AppPackage) {
         collectJob?.cancel()
         session?.close()
+        table.setPaintBusy(true)
+        status(PeekBundle.message("peek.status.loading"))
         val newSession = PeekSession(transport!!, device, pkg, scope)
         session = newSession
         collectJob = scope.launch(Dispatchers.EDT) {
@@ -147,16 +174,19 @@ internal class PeekPanel(project: Project) {
 
     private fun render(state: SessionState) {
         when (state) {
-            SessionState.Connecting -> status(PeekBundle.message("peek.status.connecting"))
+            SessionState.Connecting -> status(PeekBundle.message("peek.status.loading"))
             is SessionState.Failed -> {
+                table.setPaintBusy(false)
                 clearStores()
                 status(errorMessage(state.error))
             }
             is SessionState.Paused -> {
+                table.setPaintBusy(false)
                 clearStores()
                 status(PeekBundle.message("peek.status.paused"))
             }
             is SessionState.Active -> {
+                table.setPaintBusy(false)
                 suppressEvents = true
                 storeListModel.clear()
                 state.stores.forEach { storeListModel.addElement(it) }
