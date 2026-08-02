@@ -65,15 +65,17 @@ internal class AdbCliTransport(private val adbPath: String) : DeviceTransport {
 
     override suspend fun writeFile(device: Device, pkg: AppPackage, path: String, bytes: ByteString) = withContext(Dispatchers.IO) {
         val tmp = "$path.peek.tmp"
-        // Pipe the bytes into a temp file inside the app's dir, then rename atomically.
+        // dd takes the output path as an argument, so run-as resolves it from the app's home dir.
+        // (Shell redirection like `sh -c 'cat > file'` would run under the outer adb shell uid and fail.)
         val write = runWithInput(
-            listOf(adbPath, "-s", device.serial, "shell", "run-as", pkg.packageName, "sh", "-c", "cat > \"$tmp\""),
+            listOf(adbPath, "-s", device.serial, "shell", "run-as", pkg.packageName, "dd", "of=$tmp"),
             bytes,
         )
         classifyError(write.stderr, pkg.packageName, device.serial)?.let { throw it }
         if (write.exitCode != 0) throw TransportException.Io(write.stderr.ifBlank { "failed to write $path" })
 
         val move = run(listOf(adbPath, "-s", device.serial, "shell", "run-as", pkg.packageName, "mv", tmp, path))
+        classifyError(move.stderr, pkg.packageName, device.serial)?.let { throw it }
         if (move.exitCode != 0) throw TransportException.Io(move.stderr.ifBlank { "failed to move into $path" })
     }
 
