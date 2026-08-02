@@ -29,10 +29,10 @@ internal class AdbCliTransport(private val adbPath: String) : DeviceTransport {
     }
 
     override suspend fun listDebuggableProcesses(device: Device): List<AppPackage> = withContext(Dispatchers.IO) {
-        val result = run(listOf(adbPath, "-s", device.serial, "shell", "ps", "-A"))
-        parseProcessNames(result.stdout.decodeToString())
-            .map { AppPackage(it.substringBefore(':'), pid = null) }
-            .distinctBy { it.packageName }
+        // Installed third-party packages, so an app shows up even when it is not running.
+        // Debuggability is confirmed by run-as when its stores are located.
+        val result = run(listOf(adbPath, "-s", device.serial, "shell", "pm", "list", "packages", "-3"))
+        parsePackageList(result.stdout.decodeToString()).map { AppPackage(it, pid = null) }
     }
 
     override suspend fun exec(device: Device, command: String): ExecResult = withContext(Dispatchers.IO) {
@@ -89,6 +89,17 @@ internal fun parseDevices(stdout: String): List<Device> =
                 ?.removePrefix("model:")?.replace('_', ' ') ?: serial
             Device(serial, model, apiLevel = 0, isEmulator = serial.startsWith("emulator-"))
         }
+        .toList()
+
+/** Parse `pm list packages -3` output into package names. */
+internal fun parsePackageList(stdout: String): List<String> =
+    stdout.lineSequence()
+        .map { it.trim() }
+        .filter { it.startsWith("package:") }
+        .map { it.removePrefix("package:") }
+        .filter { it.isNotEmpty() }
+        .distinct()
+        .sorted()
         .toList()
 
 /** Parse `ps -A` output into package-like process names (contain a dot, not kernel threads). */

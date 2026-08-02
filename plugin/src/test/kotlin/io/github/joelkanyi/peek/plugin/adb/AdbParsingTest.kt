@@ -45,6 +45,18 @@ class AdbParsingTest {
     }
 
     @Test
+    fun `parses installed package list`() {
+        val out = """
+            package:com.dlight.atlas.debug
+            package:com.example.other
+        """.trimIndent()
+
+        val packages = parsePackageList(out)
+
+        assertEquals(listOf("com.dlight.atlas.debug", "com.example.other"), packages)
+    }
+
+    @Test
     fun `classifies run-as failures`() {
         assertTrue(classifyError("run-as: Package 'com.x' is not debuggable", "com.x", "s") is TransportException.NotDebuggable)
         assertTrue(classifyError("run-as: unknown package: com.x", "com.x", "s") is TransportException.PackageNotFound)

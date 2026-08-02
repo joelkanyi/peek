@@ -83,6 +83,7 @@ internal class PeekPanel(project: Project) {
         root.add(statusLabel, BorderLayout.SOUTH)
 
         deviceCombo.addActionListener { if (!suppressEvents) onDeviceChosen() }
+        appCombo.addActionListener { if (!suppressEvents) onRefresh() } // load stores as soon as an app is chosen
         storeCombo.addActionListener { if (!suppressEvents) showSelectedStore() }
         refreshButton.addActionListener { onRefresh() }
 
