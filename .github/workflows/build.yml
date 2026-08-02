@@ -19,6 +19,15 @@ jobs:
       - name: Fetch Sources
         uses: actions/checkout@v4
 
+      # Android SDK + the IntelliJ IDE download + Gradle caches exceed the default
+      # runner disk, so reclaim space first.
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          large-packages: true
+          swap-storage: false
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
