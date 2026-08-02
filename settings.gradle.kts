@@ -3,3 +3,9 @@ plugins {
 }
 
 rootProject.name = "peek"
+
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
+include(":peek-core")
+include(":peek-core-testing")
+include(":plugin")

@@ -1,7 +1,7 @@
 <!-- Keep a Changelog guide -> https://keepachangelog.com -->
 
-# peek Changelog
+# Peek Changelog
 
 ## [Unreleased]
 ### Added
-- Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+- Project skeleton: `peek-core` (pure JVM domain and transport seam), `peek-core-testing` (FakeTransport fixture), and the `plugin` module with an empty-state tool window.
