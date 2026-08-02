@@ -1,0 +1,269 @@
+public abstract interface class io/github/joelkanyi/peek/wire/Message {
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$Changed : io/github/joelkanyi/peek/wire/Message {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/joelkanyi/peek/wire/Message$Changed;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/Message$Changed;Ljava/lang/String;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/Message$Changed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getStoreId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$Err : io/github/joelkanyi/peek/wire/Message {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/joelkanyi/peek/wire/Message$Err;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/Message$Err;Ljava/lang/String;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/Message$Err;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$Hello : io/github/joelkanyi/peek/wire/Message {
+	public fun <init> (I)V
+	public final fun component1 ()I
+	public final fun copy (I)Lio/github/joelkanyi/peek/wire/Message$Hello;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/Message$Hello;IILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/Message$Hello;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getProtocolVersion ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$ListStores : io/github/joelkanyi/peek/wire/Message {
+	public static final field INSTANCE Lio/github/joelkanyi/peek/wire/Message$ListStores;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$Ok : io/github/joelkanyi/peek/wire/Message {
+	public static final field INSTANCE Lio/github/joelkanyi/peek/wire/Message$Ok;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$PutValue : io/github/joelkanyi/peek/wire/Message {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/github/joelkanyi/peek/wire/WireValue;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lio/github/joelkanyi/peek/wire/WireValue;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lio/github/joelkanyi/peek/wire/WireValue;)Lio/github/joelkanyi/peek/wire/Message$PutValue;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/Message$PutValue;Ljava/lang/String;Ljava/lang/String;Lio/github/joelkanyi/peek/wire/WireValue;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/Message$PutValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getStoreId ()Ljava/lang/String;
+	public final fun getValue ()Lio/github/joelkanyi/peek/wire/WireValue;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$ReadStore : io/github/joelkanyi/peek/wire/Message {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/joelkanyi/peek/wire/Message$ReadStore;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/Message$ReadStore;Ljava/lang/String;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/Message$ReadStore;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getStoreId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$RemoveKey : io/github/joelkanyi/peek/wire/Message {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/github/joelkanyi/peek/wire/Message$RemoveKey;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/Message$RemoveKey;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/Message$RemoveKey;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getStoreId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$StoreData : io/github/joelkanyi/peek/wire/Message {
+	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/util/List;)Lio/github/joelkanyi/peek/wire/Message$StoreData;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/Message$StoreData;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/Message$StoreData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEntries ()Ljava/util/List;
+	public final fun getStoreId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$StoreList : io/github/joelkanyi/peek/wire/Message {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/github/joelkanyi/peek/wire/Message$StoreList;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/Message$StoreList;Ljava/util/List;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/Message$StoreList;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getStores ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/Message$Welcome : io/github/joelkanyi/peek/wire/Message {
+	public fun <init> (ILjava/lang/String;)V
+	public final fun component1 ()I
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (ILjava/lang/String;)Lio/github/joelkanyi/peek/wire/Message$Welcome;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/Message$Welcome;ILjava/lang/String;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/Message$Welcome;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAppPackage ()Ljava/lang/String;
+	public final fun getProtocolVersion ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/MessageKt {
+	public static final field PROTOCOL_VERSION I
+}
+
+public final class io/github/joelkanyi/peek/wire/StoreInfo {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/github/joelkanyi/peek/wire/StoreKind;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lio/github/joelkanyi/peek/wire/StoreKind;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lio/github/joelkanyi/peek/wire/StoreKind;)Lio/github/joelkanyi/peek/wire/StoreInfo;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/StoreInfo;Ljava/lang/String;Ljava/lang/String;Lio/github/joelkanyi/peek/wire/StoreKind;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/StoreInfo;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getKind ()Lio/github/joelkanyi/peek/wire/StoreKind;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/StoreKind : java/lang/Enum {
+	public static final field PREFERENCES_DATASTORE Lio/github/joelkanyi/peek/wire/StoreKind;
+	public static final field SHARED_PREFERENCES Lio/github/joelkanyi/peek/wire/StoreKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/joelkanyi/peek/wire/StoreKind;
+	public static fun values ()[Lio/github/joelkanyi/peek/wire/StoreKind;
+}
+
+public final class io/github/joelkanyi/peek/wire/WireCodec {
+	public static final field INSTANCE Lio/github/joelkanyi/peek/wire/WireCodec;
+	public final fun decode (Lokio/ByteString;)Lio/github/joelkanyi/peek/wire/Message;
+	public final fun encode (Lio/github/joelkanyi/peek/wire/Message;)Lokio/ByteString;
+	public final fun readFrame (Lokio/BufferedSource;)Lio/github/joelkanyi/peek/wire/Message;
+	public final fun writeFrame (Lokio/BufferedSink;Lio/github/joelkanyi/peek/wire/Message;)V
+}
+
+public final class io/github/joelkanyi/peek/wire/WireEntry {
+	public fun <init> (Ljava/lang/String;Lio/github/joelkanyi/peek/wire/WireValue;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/github/joelkanyi/peek/wire/WireValue;
+	public final fun copy (Ljava/lang/String;Lio/github/joelkanyi/peek/wire/WireValue;)Lio/github/joelkanyi/peek/wire/WireEntry;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/WireEntry;Ljava/lang/String;Lio/github/joelkanyi/peek/wire/WireValue;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/WireEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getValue ()Lio/github/joelkanyi/peek/wire/WireValue;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/WireFormatException : java/lang/Exception {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public abstract interface class io/github/joelkanyi/peek/wire/WireValue {
+}
+
+public final class io/github/joelkanyi/peek/wire/WireValue$BoolValue : io/github/joelkanyi/peek/wire/WireValue {
+	public fun <init> (Z)V
+	public final fun component1 ()Z
+	public final fun copy (Z)Lio/github/joelkanyi/peek/wire/WireValue$BoolValue;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/WireValue$BoolValue;ZILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/WireValue$BoolValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/WireValue$BytesValue : io/github/joelkanyi/peek/wire/WireValue {
+	public fun <init> (Lokio/ByteString;)V
+	public final fun component1 ()Lokio/ByteString;
+	public final fun copy (Lokio/ByteString;)Lio/github/joelkanyi/peek/wire/WireValue$BytesValue;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/WireValue$BytesValue;Lokio/ByteString;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/WireValue$BytesValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()Lokio/ByteString;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/WireValue$DoubleValue : io/github/joelkanyi/peek/wire/WireValue {
+	public fun <init> (D)V
+	public final fun component1 ()D
+	public final fun copy (D)Lio/github/joelkanyi/peek/wire/WireValue$DoubleValue;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/WireValue$DoubleValue;DILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/WireValue$DoubleValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/WireValue$FloatValue : io/github/joelkanyi/peek/wire/WireValue {
+	public fun <init> (F)V
+	public final fun component1 ()F
+	public final fun copy (F)Lio/github/joelkanyi/peek/wire/WireValue$FloatValue;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/WireValue$FloatValue;FILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/WireValue$FloatValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()F
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/WireValue$IntValue : io/github/joelkanyi/peek/wire/WireValue {
+	public fun <init> (I)V
+	public final fun component1 ()I
+	public final fun copy (I)Lio/github/joelkanyi/peek/wire/WireValue$IntValue;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/WireValue$IntValue;IILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/WireValue$IntValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/WireValue$LongValue : io/github/joelkanyi/peek/wire/WireValue {
+	public fun <init> (J)V
+	public final fun component1 ()J
+	public final fun copy (J)Lio/github/joelkanyi/peek/wire/WireValue$LongValue;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/WireValue$LongValue;JILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/WireValue$LongValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/WireValue$StringSetValue : io/github/joelkanyi/peek/wire/WireValue {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/github/joelkanyi/peek/wire/WireValue$StringSetValue;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/WireValue$StringSetValue;Ljava/util/List;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/WireValue$StringSetValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValues ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/wire/WireValue$StringValue : io/github/joelkanyi/peek/wire/WireValue {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/joelkanyi/peek/wire/WireValue$StringValue;
+	public static synthetic fun copy$default (Lio/github/joelkanyi/peek/wire/WireValue$StringValue;Ljava/lang/String;ILjava/lang/Object;)Lio/github/joelkanyi/peek/wire/WireValue$StringValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
