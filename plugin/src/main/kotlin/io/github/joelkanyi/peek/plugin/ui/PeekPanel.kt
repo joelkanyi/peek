@@ -59,7 +59,9 @@ import io.github.joelkanyi.peek.plugin.transport.TransportProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -171,7 +173,31 @@ internal class PeekPanel(private val project: Project) {
         })
 
         loadDevices()
+        startDeviceWatch()
         return root
+    }
+
+    /** Keeps the device dropdown current as emulators/devices come and go (while visible). */
+    private fun startDeviceWatch() = scope.launch {
+        while (isActive) {
+            delay(DEVICE_POLL_MS)
+            if (!visible) continue
+            val devices = runCatching { transport!!.listDevices() }.getOrNull() ?: continue
+            withContext(Dispatchers.EDT) { updateDeviceCombo(devices) }
+        }
+    }
+
+    private fun updateDeviceCombo(devices: List<Device>) {
+        val current = (0 until deviceCombo.itemCount).map { deviceCombo.getItemAt(it).serial }.toSet()
+        if (devices.map { it.serial }.toSet() == current) return
+
+        val selectedSerial = (deviceCombo.selectedItem as? Device)?.serial
+        suppressEvents = true
+        deviceCombo.model = DefaultComboBoxModel(devices.toTypedArray())
+        deviceCombo.selectedItem = devices.firstOrNull { it.serial == selectedSerial }
+        suppressEvents = false
+        // Nothing selected yet and a device just appeared: select it (loads its apps).
+        if (deviceCombo.selectedItem == null && devices.isNotEmpty()) deviceCombo.selectedIndex = 0
     }
 
     private fun buildToolbar(): ActionToolbar {
@@ -537,6 +563,7 @@ internal class PeekPanel(private val project: Project) {
 
     private companion object {
         const val AGENT_HANDSHAKE_MS = 2_000L
+        const val DEVICE_POLL_MS = 3_000L
         const val CARD_TABLE = "table"
         const val CARD_TREE = "tree"
         val ADDED_BG = JBColor(Color(0xDD, 0xF3, 0xE0), Color(0x2B, 0x3B, 0x2E))
