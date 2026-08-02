@@ -135,6 +135,42 @@ class PeekSessionTest {
     }
 
     @Test
+    fun `putValue writes back and the reload shows the new value`() = runTest(UnconfinedTestDispatcher()) {
+        val path = "shared_prefs/p.xml"
+        val transport = FakeTransport(files = mapOf(path to "<map><int name=\"count\" value=\"1\" /></map>".encodeUtf8()))
+        val s = session(transport, this)
+
+        s.refresh()
+        advanceUntilIdle()
+        val handle = ((s.state.value as SessionState.Active).stores.single() as StoreState.Loaded).handle
+
+        val outcome = s.putValue(handle, "count", KvValue.of(2))
+        advanceUntilIdle()
+
+        assertThat(outcome).isEqualTo(WriteOutcome.AppliedRequiresAppRestart)
+        val reloaded = (s.state.value as SessionState.Active).stores.single() as StoreState.Loaded
+        assertThat((reloaded.snapshot.entries.single().value as KvValue.IntValue).value).isEqualTo(2)
+    }
+
+    @Test
+    fun `removeKey deletes the entry`() = runTest(UnconfinedTestDispatcher()) {
+        val path = "shared_prefs/p.xml"
+        val xml = "<map><int name=\"a\" value=\"1\" /><int name=\"b\" value=\"2\" /></map>"
+        val transport = FakeTransport(files = mapOf(path to xml.encodeUtf8()))
+        val s = session(transport, this)
+
+        s.refresh()
+        advanceUntilIdle()
+        val handle = ((s.state.value as SessionState.Active).stores.single() as StoreState.Loaded).handle
+
+        s.removeKey(handle, "a")
+        advanceUntilIdle()
+
+        val reloaded = (s.state.value as SessionState.Active).stores.single() as StoreState.Loaded
+        assertThat(reloaded.snapshot.entries.map { it.key }).isEqualTo(listOf("b"))
+    }
+
+    @Test
     fun `custom path loads a store outside the standard directories`() = runTest(UnconfinedTestDispatcher()) {
         val path = "files/phenotype/storage-info.pb"
         val transport = FakeTransport(files = mapOf(path to preferencesPb("k" to vInt(1))))

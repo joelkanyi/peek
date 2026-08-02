@@ -10,6 +10,8 @@ import io.github.joelkanyi.peek.core.locator.LocateResult
 import io.github.joelkanyi.peek.core.locator.StoreLocator
 import io.github.joelkanyi.peek.core.model.AppPackage
 import io.github.joelkanyi.peek.core.model.Device
+import io.github.joelkanyi.peek.core.model.KvEntry
+import io.github.joelkanyi.peek.core.model.KvValue
 import io.github.joelkanyi.peek.core.model.StoreDiff
 import io.github.joelkanyi.peek.core.model.StoreHandle
 import io.github.joelkanyi.peek.core.model.StoreSnapshot
@@ -80,6 +82,45 @@ public class PeekSession internal constructor(
     /** Add a store at a non-standard path (relative to the app home) and reload. */
     public fun addCustomPath(path: String) {
         if (customPaths.add(path.trim())) refresh()
+    }
+
+    /** Set (or add) [key] to [value] in [handle], then reload. */
+    public suspend fun putValue(handle: StoreHandle, key: String, value: KvValue): WriteOutcome =
+        applyEdit(handle) { entries ->
+            if (entries.any { it.key == key }) {
+                entries.map { if (it.key == key) KvEntry(key, value) else it }
+            } else {
+                entries + KvEntry(key, value)
+            }
+        }
+
+    /** Remove [key] from [handle], then reload. */
+    public suspend fun removeKey(handle: StoreHandle, key: String): WriteOutcome =
+        applyEdit(handle) { entries -> entries.filterNot { it.key == key } }
+
+    // Honest write path: stop the app (so nothing else writes and no stale cache wins),
+    // re-read fresh, apply the edit, encode, write atomically, and verify by re-reading.
+    private suspend fun applyEdit(handle: StoreHandle, transform: (List<KvEntry>) -> List<KvEntry>): WriteOutcome {
+        val codec = codecs[handle.type] ?: return WriteOutcome.Refused("this store type cannot be edited")
+        val outcome = refreshMutex.withLock {
+            try {
+                transport.exec(device, "am force-stop ${pkg.packageName}")
+                val current = (codec.decode(handle, transport.readFile(device, pkg, handle.path), now()) as? DecodeResult.Decoded)?.snapshot
+                    ?: return@withLock WriteOutcome.Refused("store is unreadable")
+                val edited = StoreSnapshot(handle, transform(current.entries), now())
+                transport.writeFile(device, pkg, handle.path, codec.encode(edited))
+                val verified = codec.decode(handle, transport.readFile(device, pkg, handle.path), now()) is DecodeResult.Decoded
+                if (verified) WriteOutcome.AppliedRequiresAppRestart else WriteOutcome.Refused("write could not be verified")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: TransportException.NotDebuggable) {
+                WriteOutcome.Refused("app is not debuggable")
+            } catch (e: Exception) {
+                WriteOutcome.Refused(e.message ?: "write failed")
+            }
+        }
+        if (outcome is WriteOutcome.AppliedRequiresAppRestart) refresh()
+        return outcome
     }
 
     /** Begin polling every [intervalMs]. Idempotent; call [stopPolling] to pause. */
