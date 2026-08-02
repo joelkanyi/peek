@@ -17,6 +17,8 @@ you can edit, add, and delete keys. Add the optional `peek-runtime` dependency f
 **live mode**: instant push updates and edits that apply while the app runs.
 <!-- Plugin description end -->
 
+![Peek inspecting an app's SharedPreferences](docs/peek-browse.png)
+
 ## Why
 
 Android apps constantly stash state in SharedPreferences and DataStore, and there
