@@ -1,1 +1,13 @@
-<manifest />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Auto-starts the agent at app launch. Debug-only (this whole library is
+             a debugImplementation dependency). Opt out with tools:node="remove". -->
+        <provider
+            android:name="io.github.joelkanyi.peek.runtime.PeekInitProvider"
+            android:authorities="${applicationId}.peekinit"
+            android:exported="false"
+            android:initOrder="100" />
+    </application>
+
+</manifest>
