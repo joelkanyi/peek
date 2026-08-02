@@ -4,6 +4,7 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.ui.Messages
 import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.JBColor
 import com.intellij.ui.JBSplitter
@@ -52,7 +53,7 @@ import javax.swing.table.DefaultTableCellRenderer
  * highlighted. Read-only in P1. Transport work runs off the EDT; only UI
  * mutation touches the EDT.
  */
-internal class PeekPanel(project: Project) {
+internal class PeekPanel(private val project: Project) {
 
     private val scope: CoroutineScope = project.service<PeekProjectService>().scope
     private val transport: DeviceTransport? =
@@ -65,6 +66,7 @@ internal class PeekPanel(project: Project) {
         setMinimumAndPreferredWidth(JBUI.scale(300))
     }
     private val refreshButton = JButton(PeekBundle.message("peek.action.refresh"))
+    private val addPathButton = JButton(PeekBundle.message("peek.action.addPath"))
     private val statusLabel = JBLabel()
 
     private val storeListModel = DefaultListModel<StoreState>()
@@ -102,6 +104,7 @@ internal class PeekPanel(project: Project) {
             add(JBLabel(PeekBundle.message("peek.label.app")))
             add(appCombo)
             add(refreshButton)
+            add(addPathButton)
         }
         statusLabel.border = JBUI.Borders.empty(4, 8)
 
@@ -120,6 +123,7 @@ internal class PeekPanel(project: Project) {
         appCombo.addActionListener { if (!suppressEvents) onRefresh() }
         storeList.addListSelectionListener { if (!it.valueIsAdjusting && !suppressEvents) showSelectedStore() }
         refreshButton.addActionListener { onRefresh() }
+        addPathButton.addActionListener { onAddPath() }
 
         loadDevices()
         return root
@@ -178,6 +182,17 @@ internal class PeekPanel(project: Project) {
         val packageName = (appCombo.selectedItem as? String)?.trim().orEmpty()
         if (packageName.isEmpty()) { status(PeekBundle.message("peek.status.pickApp")); return }
         startSession(device, AppPackage(packageName, pid = null))
+    }
+
+    private fun onAddPath() {
+        val current = session ?: run { status(PeekBundle.message("peek.status.pickApp")); return }
+        val path = Messages.showInputDialog(
+            project,
+            PeekBundle.message("peek.addPath.message"),
+            PeekBundle.message("peek.addPath.title"),
+            null,
+        )?.trim()
+        if (!path.isNullOrEmpty()) current.addCustomPath(path)
     }
 
     private fun startSession(device: Device, pkg: AppPackage) {

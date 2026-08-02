@@ -135,6 +135,19 @@ class PeekSessionTest {
     }
 
     @Test
+    fun `custom path loads a store outside the standard directories`() = runTest(UnconfinedTestDispatcher()) {
+        val path = "files/phenotype/storage-info.pb"
+        val transport = FakeTransport(files = mapOf(path to preferencesPb("k" to vInt(1))))
+        val s = session(transport, this)
+
+        s.addCustomPath(path)
+        advanceUntilIdle()
+
+        val store = (s.state.value as SessionState.Active).stores.single() as StoreState.Loaded
+        assertThat(store.snapshot.entries.single().value).isInstanceOf(KvValue.ProtoNode::class)
+    }
+
+    @Test
     fun `polling re-reads and diffs on each interval`() = runTest(UnconfinedTestDispatcher()) {
         val v1 = preferencesPb("count" to vInt(1))
         val v2 = preferencesPb("count" to vInt(2))
