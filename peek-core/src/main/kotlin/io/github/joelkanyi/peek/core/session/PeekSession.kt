@@ -45,7 +45,7 @@ public class PeekSession internal constructor(
     private val scope: CoroutineScope,
     private val now: () -> Long,
     private val retryDelayMs: Long,
-) {
+) : StoreSession {
     public constructor(
         transport: DeviceTransport,
         device: Device,
@@ -63,23 +63,23 @@ public class PeekSession internal constructor(
     private val _state = MutableStateFlow<SessionState>(SessionState.Connecting)
 
     /** The current session state, observed by the UI. */
-    public val state: StateFlow<SessionState> = _state.asStateFlow()
+    public override val state: StateFlow<SessionState> = _state.asStateFlow()
 
     private var job: Job? = null
 
     /** Re-read every store now. Manual in P1; driven by a policy in P2. */
-    public fun refresh() {
+    public override fun refresh() {
         job?.cancel()
         job = scope.launch { doRefresh() }
     }
 
     /** Add a store at a non-standard path (relative to the app home) and reload. */
-    public fun addCustomPath(path: String) {
+    public override fun addCustomPath(path: String) {
         if (customPaths.add(path.trim())) refresh()
     }
 
     /** Capture the raw bytes of all current stores as a named snapshot. */
-    public suspend fun capture(name: String): Capture = refreshMutex.withLock {
+    public override suspend fun capture(name: String): Capture = refreshMutex.withLock {
         val located = locator.locate(device, pkg)
         val handles = if (located is LocateResult.Located) {
             located.handles + customPaths
@@ -95,7 +95,7 @@ public class PeekSession internal constructor(
     }
 
     /** Set (or add) [key] to [value] in [handle], then reload. */
-    public suspend fun putValue(handle: StoreHandle, key: String, value: KvValue): WriteOutcome =
+    public override suspend fun putValue(handle: StoreHandle, key: String, value: KvValue): WriteOutcome =
         applyEdit(handle) { entries ->
             if (entries.any { it.key == key }) {
                 entries.map { if (it.key == key) KvEntry(key, value) else it }
@@ -105,7 +105,7 @@ public class PeekSession internal constructor(
         }
 
     /** Remove [key] from [handle], then reload. */
-    public suspend fun removeKey(handle: StoreHandle, key: String): WriteOutcome =
+    public override suspend fun removeKey(handle: StoreHandle, key: String): WriteOutcome =
         applyEdit(handle) { entries -> entries.filterNot { it.key == key } }
 
     // Honest write path: stop the app (so nothing else writes and no stale cache wins),
@@ -138,19 +138,19 @@ public class PeekSession internal constructor(
     }
 
     /** Begin polling every [intervalMs]. Idempotent; call [stopPolling] to pause. */
-    public fun startPolling(intervalMs: Long = DEFAULT_POLL_INTERVAL_MS) {
+    public override fun startPolling(intervalMs: Long) {
         policy?.stop()
         policy = RefreshPolicy(scope, intervalMs) { doRefresh() }.also { it.start() }
     }
 
     /** Stop polling. The last loaded state remains visible. */
-    public fun stopPolling() {
+    public override fun stopPolling() {
         policy?.stop()
         policy = null
     }
 
     /** Stop the session and release its resources. */
-    public fun close() {
+    public override fun close() {
         stopPolling()
         job?.cancel()
     }

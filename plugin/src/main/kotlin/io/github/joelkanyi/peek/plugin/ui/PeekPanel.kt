@@ -29,20 +29,25 @@ import io.github.joelkanyi.peek.core.model.Device
 import io.github.joelkanyi.peek.core.model.KvValue
 import io.github.joelkanyi.peek.core.model.StoreHandle
 import io.github.joelkanyi.peek.core.model.StoreType
+import io.github.joelkanyi.peek.core.session.AgentSession
 import io.github.joelkanyi.peek.core.session.PeekSession
 import io.github.joelkanyi.peek.core.session.SessionState
+import io.github.joelkanyi.peek.core.session.StoreSession
 import io.github.joelkanyi.peek.core.session.StoreState
 import io.github.joelkanyi.peek.core.session.WriteOutcome
 import io.github.joelkanyi.peek.core.transport.DeviceTransport
 import io.github.joelkanyi.peek.plugin.PeekBundle
+import io.github.joelkanyi.peek.plugin.adb.AgentConnector
 import io.github.joelkanyi.peek.plugin.services.PeekProjectService
 import io.github.joelkanyi.peek.plugin.services.PeekSnapshotStore
 import io.github.joelkanyi.peek.plugin.transport.TransportProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.awt.Color
@@ -101,7 +106,8 @@ internal class PeekPanel(private val project: Project) {
     private var currentHandle: StoreHandle? = null
     private var highlightAdded: Set<String> = emptySet()
     private var highlightChanged: Set<String> = emptySet()
-    private var session: PeekSession? = null
+    private var session: StoreSession? = null
+    private var live: Boolean = false
     private var collectJob: Job? = null
 
     val component: JComponent = build()
@@ -231,11 +237,29 @@ internal class PeekPanel(private val project: Project) {
         stopSession()
         table.setPaintBusy(true)
         status(PeekBundle.message("peek.status.loading"))
-        val newSession = PeekSession(transport!!, device, pkg, scope)
-        session = newSession
-        collectJob = scope.launch(Dispatchers.EDT) { newSession.state.collect { render(it) } }
-        newSession.refresh()
-        if (visible) newSession.startPolling()
+        scope.launch {
+            // Prefer the on-device agent (live) if it answers a handshake; else adb files.
+            val agent = withContext(Dispatchers.IO) { AgentConnector.open(device.serial, pkg.packageName) }
+                ?.let { socket -> AgentSession(socket, pkg, scope).also { it.connect() } }
+            val agentReady = agent != null &&
+                withTimeoutOrNull(AGENT_HANDSHAKE_MS) { agent.state.first { it is SessionState.Active } } != null
+
+            withContext(Dispatchers.EDT) {
+                val chosen: StoreSession = if (agentReady) {
+                    live = true
+                    agent!!
+                } else {
+                    agent?.close()
+                    live = false
+                    PeekSession(transport!!, device, pkg, scope).also {
+                        it.refresh()
+                        if (visible) it.startPolling()
+                    }
+                }
+                session = chosen
+                collectJob = scope.launch(Dispatchers.EDT) { chosen.state.collect { render(it) } }
+            }
+        }
     }
 
     private fun stopSession() {
@@ -263,7 +287,7 @@ internal class PeekPanel(private val project: Project) {
                 state.stores.forEach { storeListModel.addElement(it) }
                 val keepIndex = state.stores.indexOfFirst { it.handle.path == keepPath }
                 suppressEvents = false
-                status(PeekBundle.message("peek.status.stores", state.stores.size))
+                status(PeekBundle.message(if (live) "peek.status.storesLive" else "peek.status.stores", state.stores.size))
                 if (!storeListModel.isEmpty) storeList.selectedIndex = if (keepIndex >= 0) keepIndex else 0 else tableModel.setEntries(emptyList())
             }
         }
@@ -449,6 +473,7 @@ internal class PeekPanel(private val project: Project) {
     }
 
     private companion object {
+        const val AGENT_HANDSHAKE_MS = 2_000L
         const val CARD_TABLE = "table"
         const val CARD_TREE = "tree"
         val ADDED_BG = JBColor(Color(0xDD, 0xF3, 0xE0), Color(0x2B, 0x3B, 0x2E))

@@ -18,6 +18,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
+    implementation(projects.peekWire)
     api(libs.okio)
     api(libs.kotlinx.coroutines.core)
 
