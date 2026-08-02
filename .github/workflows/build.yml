@@ -19,23 +19,24 @@ jobs:
       - name: Fetch Sources
         uses: actions/checkout@v4
 
-      # Android SDK + the IntelliJ IDE download + Gradle caches exceed the default
-      # runner disk, so reclaim space first.
+      # The IntelliJ IDE download + Gradle caches exceed the default runner disk,
+      # so reclaim space first. Keep the preinstalled Android SDK (android: false)
+      # since the Android modules use it; free the rest.
       - name: Free disk space
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
+          android: false
+          dotnet: true
+          haskell: true
           large-packages: true
-          swap-storage: false
+          swap-storage: true
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
