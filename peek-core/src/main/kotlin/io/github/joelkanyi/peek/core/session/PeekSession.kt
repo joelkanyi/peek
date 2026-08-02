@@ -17,6 +17,9 @@ import io.github.joelkanyi.peek.core.transport.TransportException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -67,8 +70,13 @@ public class PeekSession internal constructor(
                         _state.value = SessionState.Failed(PeekError.NotDebuggable(pkg.packageName))
                     is LocateResult.PackageNotFound ->
                         _state.value = SessionState.Failed(PeekError.PackageNotFound(pkg.packageName))
-                    is LocateResult.Located ->
-                        _state.value = SessionState.Active(located.handles.map { loadStore(it) })
+                    is LocateResult.Located -> {
+                        // Load every store concurrently: each is an independent adb round trip.
+                        val stores = coroutineScope {
+                            located.handles.map { async { loadStore(it) } }.awaitAll()
+                        }
+                        _state.value = SessionState.Active(stores)
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e
