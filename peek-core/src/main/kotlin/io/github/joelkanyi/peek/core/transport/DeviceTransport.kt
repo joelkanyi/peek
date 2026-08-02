@@ -23,7 +23,14 @@ public interface DeviceTransport {
     /** Run a shell [command] on [device] and collect its result. */
     public suspend fun exec(device: Device, command: String): ExecResult
 
-    /** Read a file inside a debuggable app's private storage. */
+    /**
+     * File names directly inside [dir] (relative to the app's private home dir),
+     * or an empty list if the directory does not exist. Throws [TransportException]
+     * for not-debuggable, unknown-package, or device-loss conditions.
+     */
+    public suspend fun listFiles(device: Device, pkg: AppPackage, dir: String): List<String>
+
+    /** Read a file (path relative to the app's private home dir). */
     public suspend fun readFile(device: Device, pkg: AppPackage, path: String): ByteString
 
     /** File metadata, or `null` if the file does not exist. */
