@@ -2,6 +2,7 @@ package io.github.joelkanyi.peek.core.session
 
 import assertk.assertThat
 import assertk.assertions.contains
+import assertk.assertions.containsAll
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
@@ -181,6 +182,23 @@ class PeekSessionTest {
 
         val store = (s.state.value as SessionState.Active).stores.single() as StoreState.Loaded
         assertThat(store.snapshot.entries.single().value).isInstanceOf(KvValue.ProtoNode::class)
+    }
+
+    @Test
+    fun `capture reads raw bytes of all located stores`() = runTest(UnconfinedTestDispatcher()) {
+        val transport = FakeTransport(
+            files = mapOf(
+                "shared_prefs/p.xml" to "<map/>".encodeUtf8(),
+                "files/datastore/s.preferences_pb" to preferencesPb("k" to vInt(1)),
+            ),
+        )
+        val s = session(transport, this)
+
+        val capture = s.capture("snap")
+
+        assertThat(capture.name).isEqualTo("snap")
+        assertThat(capture.stores.map { it.path })
+            .containsAll("shared_prefs/p.xml", "files/datastore/s.preferences_pb")
     }
 
     @Test

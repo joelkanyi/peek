@@ -38,6 +38,11 @@ public abstract interface class io/github/joelkanyi/peek/core/codec/StoreCodec {
 	public abstract fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
 }
 
+public final class io/github/joelkanyi/peek/core/codec/StoreCodecs {
+	public static final field INSTANCE Lio/github/joelkanyi/peek/core/codec/StoreCodecs;
+	public final fun codecFor (Lio/github/joelkanyi/peek/core/model/StoreType;)Lio/github/joelkanyi/peek/core/codec/StoreCodec;
+}
+
 public abstract interface class io/github/joelkanyi/peek/core/error/PeekError {
 }
 
@@ -100,6 +105,21 @@ public final class io/github/joelkanyi/peek/core/model/AppPackage {
 	public fun <init> (Ljava/lang/String;Ljava/lang/Integer;)V
 	public final fun getPackageName ()Ljava/lang/String;
 	public final fun getPid ()Ljava/lang/Integer;
+}
+
+public final class io/github/joelkanyi/peek/core/model/Capture {
+	public fun <init> (Ljava/lang/String;JLjava/util/List;)V
+	public final fun getCapturedAtEpochMs ()J
+	public final fun getName ()Ljava/lang/String;
+	public final fun getStores ()Ljava/util/List;
+}
+
+public final class io/github/joelkanyi/peek/core/model/CapturedStore {
+	public fun <init> (Ljava/lang/String;Lio/github/joelkanyi/peek/core/model/StoreType;Ljava/lang/String;Lokio/ByteString;)V
+	public final fun getBytes ()Lokio/ByteString;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getPath ()Ljava/lang/String;
+	public final fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
 }
 
 public final class io/github/joelkanyi/peek/core/model/Device {
@@ -234,14 +254,22 @@ public final class io/github/joelkanyi/peek/core/model/StoreType : java/lang/Enu
 	public static fun values ()[Lio/github/joelkanyi/peek/core/model/StoreType;
 }
 
+public final class io/github/joelkanyi/peek/core/session/CaptureDiff {
+	public final fun getStores ()Ljava/util/List;
+}
+
+public final class io/github/joelkanyi/peek/core/session/CaptureDiffKt {
+	public static final fun diffCaptures (Lio/github/joelkanyi/peek/core/model/Capture;Lio/github/joelkanyi/peek/core/model/Capture;)Lio/github/joelkanyi/peek/core/session/CaptureDiff;
+}
+
 public final class io/github/joelkanyi/peek/core/session/PeekSession {
 	public static final field DEFAULT_POLL_INTERVAL_MS J
 	public static final field DEFAULT_RETRY_DELAY_MS J
 	public static final field HEX_PREVIEW_BYTES I
 	public static final field MAX_ATTEMPTS I
-	public static final field PROTO_LATER Ljava/lang/String;
 	public fun <init> (Lio/github/joelkanyi/peek/core/transport/DeviceTransport;Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Lkotlinx/coroutines/CoroutineScope;)V
 	public final fun addCustomPath (Ljava/lang/String;)V
+	public final fun capture (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun close ()V
 	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun putValue (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lio/github/joelkanyi/peek/core/model/KvValue;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -250,6 +278,15 @@ public final class io/github/joelkanyi/peek/core/session/PeekSession {
 	public final fun startPolling (J)V
 	public static synthetic fun startPolling$default (Lio/github/joelkanyi/peek/core/session/PeekSession;JILjava/lang/Object;)V
 	public final fun stopPolling ()V
+}
+
+public final class io/github/joelkanyi/peek/core/session/Presence : java/lang/Enum {
+	public static final field AFTER_ONLY Lio/github/joelkanyi/peek/core/session/Presence;
+	public static final field BEFORE_ONLY Lio/github/joelkanyi/peek/core/session/Presence;
+	public static final field BOTH Lio/github/joelkanyi/peek/core/session/Presence;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/joelkanyi/peek/core/session/Presence;
+	public static fun values ()[Lio/github/joelkanyi/peek/core/session/Presence;
 }
 
 public abstract interface class io/github/joelkanyi/peek/core/session/SessionState {
@@ -272,6 +309,16 @@ public final class io/github/joelkanyi/peek/core/session/SessionState$Failed : i
 
 public final class io/github/joelkanyi/peek/core/session/SessionState$Paused : io/github/joelkanyi/peek/core/session/SessionState {
 	public final fun getError ()Lio/github/joelkanyi/peek/core/error/PeekError;
+}
+
+public final class io/github/joelkanyi/peek/core/session/StoreDelta {
+	public final fun getAdded ()Ljava/util/Set;
+	public final fun getChanged ()Ljava/util/Set;
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getPath ()Ljava/lang/String;
+	public final fun getPresence ()Lio/github/joelkanyi/peek/core/session/Presence;
+	public final fun getRemoved ()Ljava/util/Set;
+	public final fun isEmpty ()Z
 }
 
 public abstract interface class io/github/joelkanyi/peek/core/session/StoreState {
