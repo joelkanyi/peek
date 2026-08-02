@@ -78,6 +78,8 @@ public final class io/github/joelkanyi/peek/core/locator/LocateResult$PackageNot
 }
 
 public final class io/github/joelkanyi/peek/core/locator/StoreLocator {
+	public static final field DATASTORE_DIR Ljava/lang/String;
+	public static final field SHARED_PREFS_DIR Ljava/lang/String;
 	public fun <init> (Lio/github/joelkanyi/peek/core/transport/DeviceTransport;)V
 	public final fun locate (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -175,6 +177,10 @@ public final class io/github/joelkanyi/peek/core/model/StoreType : java/lang/Enu
 }
 
 public final class io/github/joelkanyi/peek/core/session/PeekSession {
+	public static final field DEFAULT_RETRY_DELAY_MS J
+	public static final field HEX_PREVIEW_BYTES I
+	public static final field MAX_ATTEMPTS I
+	public static final field PROTO_LATER Ljava/lang/String;
 	public fun <init> (Lio/github/joelkanyi/peek/core/transport/DeviceTransport;Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Lkotlinx/coroutines/CoroutineScope;)V
 	public final fun close ()V
 	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
@@ -227,6 +233,7 @@ public abstract interface class io/github/joelkanyi/peek/core/transport/DeviceTr
 	public abstract fun getCapabilities ()Lio/github/joelkanyi/peek/core/transport/TransportCapabilities;
 	public abstract fun listDebuggableProcesses (Lio/github/joelkanyi/peek/core/model/Device;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun listDevices (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun listFiles (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun readFile (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun stat (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -248,5 +255,28 @@ public final class io/github/joelkanyi/peek/core/transport/TransportCapabilities
 	public fun <init> (ZZ)V
 	public final fun getCanPushEvents ()Z
 	public final fun getCanWrite ()Z
+}
+
+public abstract class io/github/joelkanyi/peek/core/transport/TransportException : java/lang/Exception {
+	public synthetic fun <init> (Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class io/github/joelkanyi/peek/core/transport/TransportException$DeviceLost : io/github/joelkanyi/peek/core/transport/TransportException {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getSerial ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/transport/TransportException$Io : io/github/joelkanyi/peek/core/transport/TransportException {
+	public fun <init> (Ljava/lang/String;)V
+}
+
+public final class io/github/joelkanyi/peek/core/transport/TransportException$NotDebuggable : io/github/joelkanyi/peek/core/transport/TransportException {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getPackageName ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/transport/TransportException$PackageNotFound : io/github/joelkanyi/peek/core/transport/TransportException {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getPackageName ()Ljava/lang/String;
 }
 
