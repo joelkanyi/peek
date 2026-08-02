@@ -19,10 +19,12 @@ import io.github.joelkanyi.peek.core.error.PeekError
 import io.github.joelkanyi.peek.core.model.AppPackage
 import io.github.joelkanyi.peek.core.model.Device
 import io.github.joelkanyi.peek.core.model.KvValue
+import io.github.joelkanyi.peek.core.model.StoreHandle
 import io.github.joelkanyi.peek.core.model.StoreType
 import io.github.joelkanyi.peek.core.session.PeekSession
 import io.github.joelkanyi.peek.core.session.SessionState
 import io.github.joelkanyi.peek.core.session.StoreState
+import io.github.joelkanyi.peek.core.session.WriteOutcome
 import io.github.joelkanyi.peek.core.transport.DeviceTransport
 import io.github.joelkanyi.peek.plugin.PeekBundle
 import io.github.joelkanyi.peek.plugin.services.PeekProjectService
@@ -37,6 +39,8 @@ import java.awt.CardLayout
 import java.awt.Color
 import java.awt.Component
 import java.awt.FlowLayout
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListModel
 import javax.swing.JButton
@@ -78,9 +82,13 @@ internal class PeekPanel(private val project: Project) {
     private val table = JBTable(tableModel)
     private val tree = Tree().apply { isRootVisible = true }
     private val detailCards = JPanel(CardLayout())
+    private val addButton = JButton(PeekBundle.message("peek.action.add"))
+    private val deleteButton = JButton(PeekBundle.message("peek.action.delete"))
+    private val canWrite: Boolean = transport?.capabilities?.canWrite == true
 
     private var suppressEvents = false
     private var visible = true
+    private var currentHandle: StoreHandle? = null
     private var highlightAdded: Set<String> = emptySet()
     private var highlightChanged: Set<String> = emptySet()
     private var session: PeekSession? = null
@@ -108,8 +116,17 @@ internal class PeekPanel(private val project: Project) {
         }
         statusLabel.border = JBUI.Borders.empty(4, 8)
 
-        detailCards.add(JBScrollPane(table), CARD_TABLE)
+        val editBar = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(6), JBUI.scale(2))).apply {
+            add(addButton)
+            add(deleteButton)
+        }
+        val tableCard = JPanel(BorderLayout()).apply {
+            add(editBar, BorderLayout.NORTH)
+            add(JBScrollPane(table), BorderLayout.CENTER)
+        }
+        detailCards.add(tableCard, CARD_TABLE)
         detailCards.add(JBScrollPane(tree), CARD_TREE)
+        setEditingEnabled(false)
         val splitter = JBSplitter(false, 0.3f).apply {
             firstComponent = JBScrollPane(storeList)
             secondComponent = detailCards
@@ -124,6 +141,13 @@ internal class PeekPanel(private val project: Project) {
         storeList.addListSelectionListener { if (!it.valueIsAdjusting && !suppressEvents) showSelectedStore() }
         refreshButton.addActionListener { onRefresh() }
         addPathButton.addActionListener { onAddPath() }
+        addButton.addActionListener { onAddKey() }
+        deleteButton.addActionListener { onDeleteSelected() }
+        table.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                if (e.clickCount == 2 && canWrite) onEditSelected()
+            }
+        })
 
         loadDevices()
         return root
@@ -256,6 +280,8 @@ internal class PeekPanel(private val project: Project) {
         when (val store = storeList.selectedValue) {
             is StoreState.Loaded -> showLoaded(store)
             is StoreState.Unparseable -> {
+                currentHandle = null
+                setEditingEnabled(false)
                 highlightAdded = emptySet()
                 highlightChanged = emptySet()
                 tableModel.setEntries(emptyList())
@@ -266,14 +292,23 @@ internal class PeekPanel(private val project: Project) {
         }
     }
 
+    private fun setEditingEnabled(enabled: Boolean) {
+        addButton.isEnabled = enabled
+        deleteButton.isEnabled = enabled
+    }
+
     private fun showLoaded(store: StoreState.Loaded) {
         val protoNode = store.snapshot.entries.singleOrNull()?.value as? KvValue.ProtoNode
         if (protoNode != null) {
+            currentHandle = null
+            setEditingEnabled(false)
             tree.model = buildProtoTreeModel(store.handle.displayName, protoNode)
             showCard(CARD_TREE)
             status(PeekBundle.message("peek.status.protoFields", protoNode.fields.size, store.handle.displayName))
             return
         }
+        currentHandle = store.handle
+        setEditingEnabled(canWrite)
         highlightAdded = store.diff.added
         highlightChanged = store.diff.changed
         tableModel.setEntries(store.snapshot.entries)
@@ -292,10 +327,63 @@ internal class PeekPanel(private val project: Project) {
         (detailCards.layout as CardLayout).show(detailCards, card)
     }
 
+    private fun onEditSelected() {
+        val handle = currentHandle ?: return
+        val entry = tableModel.entryAt(table.convertRowIndexToModel(table.selectedRow.takeIf { it >= 0 } ?: return)) ?: return
+        val newValue = promptValue(project, entry.key, entry.value) ?: return
+        confirmAndApply(PeekBundle.message("peek.edit.confirm", currentApp())) {
+            session?.putValue(handle, entry.key, newValue)
+        }
+    }
+
+    private fun onAddKey() {
+        val handle = currentHandle ?: return
+        val key = Messages.showInputDialog(project, PeekBundle.message("peek.addKey.message"), PeekBundle.message("peek.addKey.title"), null)?.trim()
+        if (key.isNullOrEmpty()) return
+        val typeIndex = Messages.showDialog(project, PeekBundle.message("peek.chooseType.message"), PeekBundle.message("peek.chooseType.title"), EDITABLE_TYPES.toTypedArray(), 0, null)
+        if (typeIndex < 0) return
+        val value = promptValue(project, key, defaultForType(typeIndex)) ?: return
+        confirmAndApply(PeekBundle.message("peek.edit.confirm", currentApp())) {
+            session?.putValue(handle, key, value)
+        }
+    }
+
+    private fun onDeleteSelected() {
+        val handle = currentHandle ?: return
+        val entry = tableModel.entryAt(table.convertRowIndexToModel(table.selectedRow.takeIf { it >= 0 } ?: return)) ?: return
+        confirmAndApply(PeekBundle.message("peek.edit.deleteConfirm", entry.key, currentApp())) {
+            session?.removeKey(handle, entry.key)
+        }
+    }
+
+    private fun confirmAndApply(message: String, action: suspend () -> WriteOutcome?) {
+        val confirmed = Messages.showYesNoDialog(project, message, PeekBundle.message("peek.edit.title"), Messages.getWarningIcon()) == Messages.YES
+        if (!confirmed) return
+        table.setPaintBusy(true)
+        scope.launch {
+            val outcome = runCatching { action() }.getOrNull()
+            withContext(Dispatchers.EDT) {
+                table.setPaintBusy(false)
+                status(outcomeStatus(outcome))
+            }
+        }
+    }
+
+    private fun outcomeStatus(outcome: WriteOutcome?): String = when (outcome) {
+        WriteOutcome.Applied -> PeekBundle.message("peek.status.savedLive")
+        WriteOutcome.AppliedRequiresAppRestart -> PeekBundle.message("peek.status.savedRestart")
+        is WriteOutcome.Refused -> PeekBundle.message("peek.status.notSaved", outcome.reason)
+        null -> PeekBundle.message("peek.status.notSaved", "")
+    }
+
+    private fun currentApp(): String = (appCombo.selectedItem as? String) ?: "the app"
+
     private fun clearStores() {
         suppressEvents = true
         storeListModel.clear()
         suppressEvents = false
+        currentHandle = null
+        setEditingEnabled(false)
         highlightAdded = emptySet()
         highlightChanged = emptySet()
         tableModel.setEntries(emptyList())
