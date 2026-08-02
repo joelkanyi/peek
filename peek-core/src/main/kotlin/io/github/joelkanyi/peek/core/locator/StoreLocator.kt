@@ -38,6 +38,17 @@ public class StoreLocator(private val transport: DeviceTransport) {
         // TransportException.DeviceLost propagates to the session, which pauses.
     }
 
+    /** Build a handle for a user-supplied path, classifying by file extension. */
+    public fun handleFor(pkg: AppPackage, path: String): StoreHandle {
+        val name = path.substringAfterLast('/')
+        val type = when {
+            name.endsWith(".xml") -> StoreType.SHARED_PREFERENCES
+            name.endsWith(".preferences_pb") -> StoreType.PREFERENCES_DATASTORE
+            else -> StoreType.PROTO_DATASTORE
+        }
+        return StoreHandle(pkg, path, type, name, stat = null)
+    }
+
     private suspend fun scan(
         device: Device,
         pkg: AppPackage,

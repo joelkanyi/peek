@@ -60,6 +60,7 @@ public class PeekSession internal constructor(
     )
 
     private var previousSnapshots: Map<String, StoreSnapshot> = emptyMap()
+    private val customPaths = LinkedHashSet<String>()
     private val refreshMutex = Mutex()
     private var policy: RefreshPolicy? = null
 
@@ -74,6 +75,11 @@ public class PeekSession internal constructor(
     public fun refresh() {
         job?.cancel()
         job = scope.launch { doRefresh() }
+    }
+
+    /** Add a store at a non-standard path (relative to the app home) and reload. */
+    public fun addCustomPath(path: String) {
+        if (customPaths.add(path.trim())) refresh()
     }
 
     /** Begin polling every [intervalMs]. Idempotent; call [stopPolling] to pause. */
@@ -107,8 +113,11 @@ public class PeekSession internal constructor(
                     // Load every store concurrently: each is an independent adb round trip.
                     // Read the baseline before the fan-out; update it after joining (no shared writes).
                     val baseline = previousSnapshots
+                    val handles = located.handles + customPaths
+                        .filter { path -> located.handles.none { it.path == path } }
+                        .map { locator.handleFor(pkg, it) }
                     val stores = coroutineScope {
-                        located.handles.map { async { loadStore(it, baseline[it.path]) } }.awaitAll()
+                        handles.map { async { loadStore(it, baseline[it.path]) } }.awaitAll()
                     }
                     previousSnapshots = baseline + stores.filterIsInstance<StoreState.Loaded>()
                         .associate { it.handle.path to it.snapshot }

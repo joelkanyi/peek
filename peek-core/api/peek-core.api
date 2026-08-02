@@ -88,6 +88,7 @@ public final class io/github/joelkanyi/peek/core/locator/StoreLocator {
 	public static final field DATASTORE_DIR Ljava/lang/String;
 	public static final field SHARED_PREFS_DIR Ljava/lang/String;
 	public fun <init> (Lio/github/joelkanyi/peek/core/transport/DeviceTransport;)V
+	public final fun handleFor (Lio/github/joelkanyi/peek/core/model/AppPackage;Ljava/lang/String;)Lio/github/joelkanyi/peek/core/model/StoreHandle;
 	public final fun locate (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
@@ -236,6 +237,7 @@ public final class io/github/joelkanyi/peek/core/session/PeekSession {
 	public static final field MAX_ATTEMPTS I
 	public static final field PROTO_LATER Ljava/lang/String;
 	public fun <init> (Lio/github/joelkanyi/peek/core/transport/DeviceTransport;Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Lkotlinx/coroutines/CoroutineScope;)V
+	public final fun addCustomPath (Ljava/lang/String;)V
 	public final fun close ()V
 	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun refresh ()V
