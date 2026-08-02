@@ -109,8 +109,12 @@ public class PeekSession internal constructor(
                     ?: return@withLock WriteOutcome.Refused("store is unreadable")
                 val edited = StoreSnapshot(handle, transform(current.entries), now())
                 transport.writeFile(device, pkg, handle.path, codec.encode(edited))
-                val verified = codec.decode(handle, transport.readFile(device, pkg, handle.path), now()) is DecodeResult.Decoded
-                if (verified) WriteOutcome.AppliedRequiresAppRestart else WriteOutcome.Refused("write could not be verified")
+                val reread = (codec.decode(handle, transport.readFile(device, pkg, handle.path), now()) as? DecodeResult.Decoded)?.snapshot
+                if (reread != null && entriesMatch(reread.entries, edited.entries)) {
+                    WriteOutcome.AppliedRequiresAppRestart
+                } else {
+                    WriteOutcome.Refused("the change did not persist to disk")
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: TransportException.NotDebuggable) {
@@ -198,6 +202,13 @@ public class PeekSession internal constructor(
         }
         val failure = lastFailure!!
         return StoreState.Unparseable(handle, failure.reason, hexPreview(failure.bytes))
+    }
+
+    private fun entriesMatch(actual: List<KvEntry>, expected: List<KvEntry>): Boolean {
+        val actualMap = actual.associate { it.key to it.value }
+        val expectedMap = expected.associate { it.key to it.value }
+        return actualMap.keys == expectedMap.keys &&
+            expectedMap.all { (key, value) -> actualMap[key]?.sameAs(value) == true }
     }
 
     private fun diff(previous: StoreSnapshot?, next: StoreSnapshot): StoreDiff {
