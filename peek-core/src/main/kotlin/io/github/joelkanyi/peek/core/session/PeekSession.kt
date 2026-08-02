@@ -9,9 +9,11 @@ import io.github.joelkanyi.peek.core.locator.LocateResult
 import io.github.joelkanyi.peek.core.locator.StoreLocator
 import io.github.joelkanyi.peek.core.model.AppPackage
 import io.github.joelkanyi.peek.core.model.Device
+import io.github.joelkanyi.peek.core.model.StoreDiff
 import io.github.joelkanyi.peek.core.model.StoreHandle
 import io.github.joelkanyi.peek.core.model.StoreSnapshot
 import io.github.joelkanyi.peek.core.model.StoreType
+import io.github.joelkanyi.peek.core.model.sameAs
 import io.github.joelkanyi.peek.core.transport.DeviceTransport
 import io.github.joelkanyi.peek.core.transport.TransportException
 import kotlinx.coroutines.CancellationException
@@ -53,6 +55,8 @@ public class PeekSession internal constructor(
         StoreType.PREFERENCES_DATASTORE to PreferencesPbCodec(),
     )
 
+    private var previousSnapshots: Map<String, StoreSnapshot> = emptyMap()
+
     private val _state = MutableStateFlow<SessionState>(SessionState.Connecting)
 
     /** The current session state, observed by the UI. */
@@ -72,9 +76,13 @@ public class PeekSession internal constructor(
                         _state.value = SessionState.Failed(PeekError.PackageNotFound(pkg.packageName))
                     is LocateResult.Located -> {
                         // Load every store concurrently: each is an independent adb round trip.
+                        // Read the baseline before the fan-out; update it after joining (no shared writes).
+                        val baseline = previousSnapshots
                         val stores = coroutineScope {
-                            located.handles.map { async { loadStore(it) } }.awaitAll()
+                            located.handles.map { async { loadStore(it, baseline[it.path]) } }.awaitAll()
                         }
+                        previousSnapshots = baseline + stores.filterIsInstance<StoreState.Loaded>()
+                            .associate { it.handle.path to it.snapshot }
                         _state.value = SessionState.Active(stores)
                     }
                 }
@@ -93,7 +101,7 @@ public class PeekSession internal constructor(
         job?.cancel()
     }
 
-    private suspend fun loadStore(handle: StoreHandle): StoreState {
+    private suspend fun loadStore(handle: StoreHandle, previous: StoreSnapshot?): StoreState {
         val codec = codecs[handle.type]
             ?: return StoreState.Unparseable(handle, PROTO_LATER, hexPreview = "")
 
@@ -109,13 +117,27 @@ public class PeekSession internal constructor(
                 return StoreState.Unparseable(handle, e.message ?: "read failed", hexPreview = "")
             }
             when (val decoded = codec.decode(handle, bytes, now())) {
-                is DecodeResult.Decoded -> return StoreState.Loaded(handle, decoded.snapshot)
+                is DecodeResult.Decoded ->
+                    return StoreState.Loaded(handle, decoded.snapshot, diff(previous, decoded.snapshot))
                 is DecodeResult.Failed -> lastFailure = decoded
             }
             if (attempt == 0) delay(retryDelayMs)
         }
         val failure = lastFailure!!
         return StoreState.Unparseable(handle, failure.reason, hexPreview(failure.bytes))
+    }
+
+    private fun diff(previous: StoreSnapshot?, next: StoreSnapshot): StoreDiff {
+        if (previous == null) return StoreDiff.NONE
+        val prevMap = previous.entries.associate { it.key to it.value }
+        val nextMap = next.entries.associate { it.key to it.value }
+        val changed = nextMap.keys.intersect(prevMap.keys)
+            .filterTo(LinkedHashSet()) { !prevMap.getValue(it).sameAs(nextMap.getValue(it)) }
+        return StoreDiff(
+            added = nextMap.keys - prevMap.keys,
+            changed = changed,
+            removed = prevMap.keys - nextMap.keys,
+        )
     }
 
     private fun hexPreview(bytes: ByteString): String {
@@ -155,6 +177,7 @@ public sealed interface StoreState {
     public class Loaded internal constructor(
         override val handle: StoreHandle,
         public val snapshot: StoreSnapshot,
+        public val diff: StoreDiff,
     ) : StoreState
 
     public class Unparseable internal constructor(

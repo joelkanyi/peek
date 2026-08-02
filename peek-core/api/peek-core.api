@@ -153,6 +153,18 @@ public final class io/github/joelkanyi/peek/core/model/KvValue$StringValue : io/
 	public final fun getValue ()Ljava/lang/String;
 }
 
+public final class io/github/joelkanyi/peek/core/model/StoreDiff {
+	public static final field Companion Lio/github/joelkanyi/peek/core/model/StoreDiff$Companion;
+	public final fun getAdded ()Ljava/util/Set;
+	public final fun getChanged ()Ljava/util/Set;
+	public final fun getRemoved ()Ljava/util/Set;
+	public final fun isEmpty ()Z
+}
+
+public final class io/github/joelkanyi/peek/core/model/StoreDiff$Companion {
+	public final fun getNONE ()Lio/github/joelkanyi/peek/core/model/StoreDiff;
+}
+
 public final class io/github/joelkanyi/peek/core/model/StoreHandle {
 	public final fun getDisplayName ()Ljava/lang/String;
 	public final fun getPath ()Ljava/lang/String;
@@ -214,6 +226,7 @@ public abstract interface class io/github/joelkanyi/peek/core/session/StoreState
 }
 
 public final class io/github/joelkanyi/peek/core/session/StoreState$Loaded : io/github/joelkanyi/peek/core/session/StoreState {
+	public final fun getDiff ()Lio/github/joelkanyi/peek/core/model/StoreDiff;
 	public fun getHandle ()Lio/github/joelkanyi/peek/core/model/StoreHandle;
 	public final fun getSnapshot ()Lio/github/joelkanyi/peek/core/model/StoreSnapshot;
 }

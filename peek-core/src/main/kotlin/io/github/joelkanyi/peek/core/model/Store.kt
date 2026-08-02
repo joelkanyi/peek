@@ -30,3 +30,20 @@ public class KvEntry internal constructor(
     public val key: String,
     public val value: KvValue,
 )
+
+/**
+ * What changed between two snapshots of the same store. Empty on the first load
+ * (no baseline to compare against).
+ */
+public class StoreDiff internal constructor(
+    public val added: Set<String>,
+    public val changed: Set<String>,
+    public val removed: Set<String>,
+) {
+    /** True when nothing changed. */
+    public val isEmpty: Boolean get() = added.isEmpty() && changed.isEmpty() && removed.isEmpty()
+
+    public companion object {
+        public val NONE: StoreDiff = StoreDiff(emptySet(), emptySet(), emptySet())
+    }
+}

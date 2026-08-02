@@ -1,10 +1,12 @@
 package io.github.joelkanyi.peek.core.session
 
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotEmpty
+import assertk.assertions.isTrue
 import assertk.assertions.prop
 import io.github.joelkanyi.peek.core.codec.preferencesPb
 import io.github.joelkanyi.peek.core.codec.vInt
@@ -104,6 +106,30 @@ class PeekSessionTest {
 
         val store = (s.state.value as SessionState.Active).stores.single()
         assertThat(store).isInstanceOf(StoreState.Loaded::class)
+    }
+
+    @Test
+    fun `diff marks changed added and removed keys across refreshes`() = runTest(UnconfinedTestDispatcher()) {
+        val first = preferencesPb("count" to vInt(1), "gone" to vInt(9))
+        val second = preferencesPb("count" to vInt(2), "added" to vInt(3))
+        val path = "files/datastore/s.preferences_pb"
+        val transport = FakeTransport(
+            files = mapOf(path to first),
+            readSequences = mapOf(path to listOf(first, second)),
+        )
+        val s = session(transport, this)
+
+        s.refresh()
+        advanceUntilIdle()
+        val baseline = (s.state.value as SessionState.Active).stores.single() as StoreState.Loaded
+        assertThat(baseline.diff.isEmpty).isTrue()
+
+        s.refresh()
+        advanceUntilIdle()
+        val updated = (s.state.value as SessionState.Active).stores.single() as StoreState.Loaded
+        assertThat(updated.diff.changed).contains("count")
+        assertThat(updated.diff.added).contains("added")
+        assertThat(updated.diff.removed).contains("gone")
     }
 
     @Test
