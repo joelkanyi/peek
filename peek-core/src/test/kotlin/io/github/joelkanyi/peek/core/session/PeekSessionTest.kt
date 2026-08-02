@@ -84,15 +84,15 @@ class PeekSessionTest {
     }
 
     @Test
-    fun `proto datastore is reported as not yet supported`() = runTest(UnconfinedTestDispatcher()) {
+    fun `proto datastore decodes to a proto node`() = runTest(UnconfinedTestDispatcher()) {
         val transport = FakeTransport(files = mapOf("files/datastore/u.pb" to validPb))
         val s = session(transport, this)
 
         s.refresh()
         advanceUntilIdle()
 
-        val store = (s.state.value as SessionState.Active).stores.single()
-        assertThat(store).isInstanceOf(StoreState.Unparseable::class)
+        val store = (s.state.value as SessionState.Active).stores.single() as StoreState.Loaded
+        assertThat(store.snapshot.entries.single().value).isInstanceOf(KvValue.ProtoNode::class)
     }
 
     @Test

@@ -16,6 +16,13 @@ public final class io/github/joelkanyi/peek/core/codec/PreferencesPbCodec : io/g
 	public fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
 }
 
+public final class io/github/joelkanyi/peek/core/codec/ProtoDataStoreCodec : io/github/joelkanyi/peek/core/codec/StoreCodec {
+	public static final field MAX_DEPTH I
+	public fun <init> ()V
+	public fun decode (Lio/github/joelkanyi/peek/core/model/StoreHandle;Lokio/ByteString;J)Lio/github/joelkanyi/peek/core/codec/DecodeResult;
+	public fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
+}
+
 public final class io/github/joelkanyi/peek/core/codec/SharedPreferencesXmlCodec : io/github/joelkanyi/peek/core/codec/StoreCodec {
 	public fun <init> ()V
 	public fun decode (Lio/github/joelkanyi/peek/core/model/StoreHandle;Lokio/ByteString;J)Lio/github/joelkanyi/peek/core/codec/DecodeResult;
@@ -143,6 +150,8 @@ public final class io/github/joelkanyi/peek/core/model/KvValue$LongValue : io/gi
 }
 
 public final class io/github/joelkanyi/peek/core/model/KvValue$ProtoNode : io/github/joelkanyi/peek/core/model/KvValue {
+	public final fun getBytes ()Lokio/ByteString;
+	public final fun getFields ()Ljava/util/List;
 }
 
 public final class io/github/joelkanyi/peek/core/model/KvValue$StringSetValue : io/github/joelkanyi/peek/core/model/KvValue {
@@ -151,6 +160,38 @@ public final class io/github/joelkanyi/peek/core/model/KvValue$StringSetValue : 
 
 public final class io/github/joelkanyi/peek/core/model/KvValue$StringValue : io/github/joelkanyi/peek/core/model/KvValue {
 	public final fun getValue ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/model/ProtoField {
+	public final fun getNumber ()I
+	public final fun getValue ()Lio/github/joelkanyi/peek/core/model/ProtoValue;
+}
+
+public abstract interface class io/github/joelkanyi/peek/core/model/ProtoValue {
+}
+
+public final class io/github/joelkanyi/peek/core/model/ProtoValue$Bytes : io/github/joelkanyi/peek/core/model/ProtoValue {
+	public final fun getValue ()Lokio/ByteString;
+}
+
+public final class io/github/joelkanyi/peek/core/model/ProtoValue$Fixed32 : io/github/joelkanyi/peek/core/model/ProtoValue {
+	public final fun getValue ()I
+}
+
+public final class io/github/joelkanyi/peek/core/model/ProtoValue$Fixed64 : io/github/joelkanyi/peek/core/model/ProtoValue {
+	public final fun getValue ()J
+}
+
+public final class io/github/joelkanyi/peek/core/model/ProtoValue$Message : io/github/joelkanyi/peek/core/model/ProtoValue {
+	public final fun getFields ()Ljava/util/List;
+}
+
+public final class io/github/joelkanyi/peek/core/model/ProtoValue$Text : io/github/joelkanyi/peek/core/model/ProtoValue {
+	public final fun getValue ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/model/ProtoValue$Varint : io/github/joelkanyi/peek/core/model/ProtoValue {
+	public final fun getValue ()J
 }
 
 public final class io/github/joelkanyi/peek/core/model/StoreDiff {
