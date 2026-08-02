@@ -18,6 +18,7 @@ import com.intellij.util.ui.JBUI
 import io.github.joelkanyi.peek.core.error.PeekError
 import io.github.joelkanyi.peek.core.model.AppPackage
 import io.github.joelkanyi.peek.core.model.Device
+import io.github.joelkanyi.peek.core.model.Capture
 import io.github.joelkanyi.peek.core.model.KvValue
 import io.github.joelkanyi.peek.core.model.StoreHandle
 import io.github.joelkanyi.peek.core.model.StoreType
@@ -41,6 +42,7 @@ import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import javax.swing.BoxLayout
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListModel
 import javax.swing.JButton
@@ -84,6 +86,9 @@ internal class PeekPanel(private val project: Project) {
     private val detailCards = JPanel(CardLayout())
     private val addButton = JButton(PeekBundle.message("peek.action.add"))
     private val deleteButton = JButton(PeekBundle.message("peek.action.delete"))
+    private val snapshotButton = JButton(PeekBundle.message("peek.action.snapshot"))
+    private val compareButton = JButton(PeekBundle.message("peek.action.compare"))
+    private val captures = mutableListOf<Capture>()
     private val canWrite: Boolean = transport?.capabilities?.canWrite == true
 
     private var suppressEvents = false
@@ -132,7 +137,18 @@ internal class PeekPanel(private val project: Project) {
             secondComponent = detailCards
         }
 
-        root.add(toolbar, BorderLayout.NORTH)
+        val snapshotBar = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(6), JBUI.scale(2))).apply {
+            add(snapshotButton)
+            add(compareButton)
+        }
+        val north = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            add(toolbar)
+            add(snapshotBar)
+        }
+        compareButton.isEnabled = false
+
+        root.add(north, BorderLayout.NORTH)
         root.add(splitter, BorderLayout.CENTER)
         root.add(statusLabel, BorderLayout.SOUTH)
 
@@ -143,6 +159,8 @@ internal class PeekPanel(private val project: Project) {
         addPathButton.addActionListener { onAddPath() }
         addButton.addActionListener { onAddKey() }
         deleteButton.addActionListener { onDeleteSelected() }
+        snapshotButton.addActionListener { onSnapshot() }
+        compareButton.addActionListener { onCompare() }
         table.addMouseListener(object : MouseAdapter() {
             override fun mouseClicked(e: MouseEvent) {
                 if (e.clickCount == 2 && canWrite) onEditSelected()
@@ -206,6 +224,35 @@ internal class PeekPanel(private val project: Project) {
         val packageName = (appCombo.selectedItem as? String)?.trim().orEmpty()
         if (packageName.isEmpty()) { status(PeekBundle.message("peek.status.pickApp")); return }
         startSession(device, AppPackage(packageName, pid = null))
+    }
+
+    private fun onSnapshot() {
+        val current = session ?: run { status(PeekBundle.message("peek.status.pickApp")); return }
+        val name = Messages.showInputDialog(
+            project, PeekBundle.message("peek.snapshot.message"), PeekBundle.message("peek.snapshot.title"),
+            null, "Snapshot ${captures.size + 1}", null,
+        )?.trim()
+        if (name.isNullOrEmpty()) return
+        scope.launch {
+            val capture = runCatching { current.capture(name) }.getOrNull()
+            withContext(Dispatchers.EDT) {
+                if (capture == null) {
+                    status(PeekBundle.message("peek.status.snapshotFailed"))
+                } else {
+                    captures.add(capture)
+                    compareButton.isEnabled = captures.size >= 2
+                    status(PeekBundle.message("peek.status.captured", name, capture.stores.size))
+                }
+            }
+        }
+    }
+
+    private fun onCompare() {
+        if (captures.size < 2) {
+            status(PeekBundle.message("peek.status.needTwoSnapshots"))
+            return
+        }
+        CompareDialog(project, captures.toList()).show()
     }
 
     private fun onAddPath() {
