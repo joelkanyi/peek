@@ -12,10 +12,12 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
+import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
 import io.github.joelkanyi.peek.core.error.PeekError
 import io.github.joelkanyi.peek.core.model.AppPackage
 import io.github.joelkanyi.peek.core.model.Device
+import io.github.joelkanyi.peek.core.model.KvValue
 import io.github.joelkanyi.peek.core.model.StoreType
 import io.github.joelkanyi.peek.core.session.PeekSession
 import io.github.joelkanyi.peek.core.session.SessionState
@@ -30,6 +32,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.BorderLayout
+import java.awt.CardLayout
 import java.awt.Color
 import java.awt.Component
 import java.awt.FlowLayout
@@ -71,6 +74,8 @@ internal class PeekPanel(project: Project) {
     }
     private val tableModel = StoreTableModel()
     private val table = JBTable(tableModel)
+    private val tree = Tree().apply { isRootVisible = true }
+    private val detailCards = JPanel(CardLayout())
 
     private var suppressEvents = false
     private var visible = true
@@ -100,9 +105,11 @@ internal class PeekPanel(project: Project) {
         }
         statusLabel.border = JBUI.Borders.empty(4, 8)
 
+        detailCards.add(JBScrollPane(table), CARD_TABLE)
+        detailCards.add(JBScrollPane(tree), CARD_TREE)
         val splitter = JBSplitter(false, 0.3f).apply {
             firstComponent = JBScrollPane(storeList)
-            secondComponent = JBScrollPane(table)
+            secondComponent = detailCards
         }
 
         root.add(toolbar, BorderLayout.NORTH)
@@ -232,27 +239,42 @@ internal class PeekPanel(project: Project) {
 
     private fun showSelectedStore() {
         when (val store = storeList.selectedValue) {
-            is StoreState.Loaded -> {
-                highlightAdded = store.diff.added
-                highlightChanged = store.diff.changed
-                tableModel.setEntries(store.snapshot.entries)
-                val changedCount = store.diff.added.size + store.diff.changed.size
-                status(
-                    if (changedCount > 0) {
-                        PeekBundle.message("peek.status.entriesChanged", store.snapshot.entries.size, store.handle.displayName, changedCount)
-                    } else {
-                        PeekBundle.message("peek.status.entries", store.snapshot.entries.size, store.handle.displayName)
-                    },
-                )
-            }
+            is StoreState.Loaded -> showLoaded(store)
             is StoreState.Unparseable -> {
                 highlightAdded = emptySet()
                 highlightChanged = emptySet()
                 tableModel.setEntries(emptyList())
+                showCard(CARD_TABLE)
                 status(PeekBundle.message("peek.status.unparseable", store.reason))
             }
             else -> tableModel.setEntries(emptyList())
         }
+    }
+
+    private fun showLoaded(store: StoreState.Loaded) {
+        val protoNode = store.snapshot.entries.singleOrNull()?.value as? KvValue.ProtoNode
+        if (protoNode != null) {
+            tree.model = buildProtoTreeModel(store.handle.displayName, protoNode)
+            showCard(CARD_TREE)
+            status(PeekBundle.message("peek.status.protoFields", protoNode.fields.size, store.handle.displayName))
+            return
+        }
+        highlightAdded = store.diff.added
+        highlightChanged = store.diff.changed
+        tableModel.setEntries(store.snapshot.entries)
+        showCard(CARD_TABLE)
+        val changedCount = store.diff.added.size + store.diff.changed.size
+        status(
+            if (changedCount > 0) {
+                PeekBundle.message("peek.status.entriesChanged", store.snapshot.entries.size, store.handle.displayName, changedCount)
+            } else {
+                PeekBundle.message("peek.status.entries", store.snapshot.entries.size, store.handle.displayName)
+            },
+        )
+    }
+
+    private fun showCard(card: String) {
+        (detailCards.layout as CardLayout).show(detailCards, card)
     }
 
     private fun clearStores() {
@@ -279,6 +301,8 @@ internal class PeekPanel(project: Project) {
     }
 
     private companion object {
+        const val CARD_TABLE = "table"
+        const val CARD_TREE = "tree"
         val ADDED_BG = JBColor(Color(0xDD, 0xF3, 0xE0), Color(0x2B, 0x3B, 0x2E))
         val CHANGED_BG = JBColor(Color(0xFB, 0xF1, 0xD0), Color(0x3B, 0x36, 0x22))
     }
