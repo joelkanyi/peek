@@ -1,0 +1,252 @@
+public abstract interface class io/github/joelkanyi/peek/core/codec/DecodeResult {
+}
+
+public final class io/github/joelkanyi/peek/core/codec/DecodeResult$Decoded : io/github/joelkanyi/peek/core/codec/DecodeResult {
+	public final fun getSnapshot ()Lio/github/joelkanyi/peek/core/model/StoreSnapshot;
+}
+
+public final class io/github/joelkanyi/peek/core/codec/DecodeResult$Failed : io/github/joelkanyi/peek/core/codec/DecodeResult {
+	public final fun getBytes ()Lokio/ByteString;
+	public final fun getReason ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/codec/PreferencesPbCodec : io/github/joelkanyi/peek/core/codec/StoreCodec {
+	public fun <init> ()V
+	public fun decode (Lio/github/joelkanyi/peek/core/model/StoreHandle;Lokio/ByteString;J)Lio/github/joelkanyi/peek/core/codec/DecodeResult;
+	public fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
+}
+
+public final class io/github/joelkanyi/peek/core/codec/SharedPreferencesXmlCodec : io/github/joelkanyi/peek/core/codec/StoreCodec {
+	public fun <init> ()V
+	public fun decode (Lio/github/joelkanyi/peek/core/model/StoreHandle;Lokio/ByteString;J)Lio/github/joelkanyi/peek/core/codec/DecodeResult;
+	public fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
+}
+
+public abstract interface class io/github/joelkanyi/peek/core/codec/StoreCodec {
+	public abstract fun decode (Lio/github/joelkanyi/peek/core/model/StoreHandle;Lokio/ByteString;J)Lio/github/joelkanyi/peek/core/codec/DecodeResult;
+	public abstract fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
+}
+
+public abstract interface class io/github/joelkanyi/peek/core/error/PeekError {
+}
+
+public final class io/github/joelkanyi/peek/core/error/PeekError$AdbUnavailable : io/github/joelkanyi/peek/core/error/PeekError {
+	public static final field INSTANCE Lio/github/joelkanyi/peek/core/error/PeekError$AdbUnavailable;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/error/PeekError$DeviceLost : io/github/joelkanyi/peek/core/error/PeekError {
+	public final fun getSerial ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/error/PeekError$FileVanished : io/github/joelkanyi/peek/core/error/PeekError {
+	public final fun getPath ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/error/PeekError$NotDebuggable : io/github/joelkanyi/peek/core/error/PeekError {
+	public final fun getPkg ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/error/PeekError$PackageNotFound : io/github/joelkanyi/peek/core/error/PeekError {
+	public final fun getPkg ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/error/PeekError$ParseFailed : io/github/joelkanyi/peek/core/error/PeekError {
+	public final fun getPath ()Ljava/lang/String;
+	public final fun getReason ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/error/PeekError$TransportFailure : io/github/joelkanyi/peek/core/error/PeekError {
+	public final fun getMessage ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/joelkanyi/peek/core/locator/LocateResult {
+}
+
+public final class io/github/joelkanyi/peek/core/locator/LocateResult$Located : io/github/joelkanyi/peek/core/locator/LocateResult {
+	public final fun getHandles ()Ljava/util/List;
+}
+
+public final class io/github/joelkanyi/peek/core/locator/LocateResult$NotDebuggable : io/github/joelkanyi/peek/core/locator/LocateResult {
+	public final fun getRaw ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/locator/LocateResult$PackageNotFound : io/github/joelkanyi/peek/core/locator/LocateResult {
+	public final fun getRaw ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/locator/StoreLocator {
+	public fun <init> (Lio/github/joelkanyi/peek/core/transport/DeviceTransport;)V
+	public final fun locate (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/joelkanyi/peek/core/model/AppPackage {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Integer;)V
+	public final fun getPackageName ()Ljava/lang/String;
+	public final fun getPid ()Ljava/lang/Integer;
+}
+
+public final class io/github/joelkanyi/peek/core/model/Device {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;IZ)V
+	public final fun getApiLevel ()I
+	public final fun getModel ()Ljava/lang/String;
+	public final fun getSerial ()Ljava/lang/String;
+	public final fun isEmulator ()Z
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvEntry {
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getValue ()Lio/github/joelkanyi/peek/core/model/KvValue;
+}
+
+public abstract interface class io/github/joelkanyi/peek/core/model/KvValue {
+	public static final field Companion Lio/github/joelkanyi/peek/core/model/KvValue$Companion;
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvValue$BoolValue : io/github/joelkanyi/peek/core/model/KvValue {
+	public final fun getValue ()Z
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvValue$BytesValue : io/github/joelkanyi/peek/core/model/KvValue {
+	public final fun getValue ()Lokio/ByteString;
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvValue$Companion {
+	public final fun of (D)Lio/github/joelkanyi/peek/core/model/KvValue;
+	public final fun of (F)Lio/github/joelkanyi/peek/core/model/KvValue;
+	public final fun of (I)Lio/github/joelkanyi/peek/core/model/KvValue;
+	public final fun of (J)Lio/github/joelkanyi/peek/core/model/KvValue;
+	public final fun of (Ljava/lang/String;)Lio/github/joelkanyi/peek/core/model/KvValue;
+	public final fun of (Ljava/util/Set;)Lio/github/joelkanyi/peek/core/model/KvValue;
+	public final fun of (Lokio/ByteString;)Lio/github/joelkanyi/peek/core/model/KvValue;
+	public final fun of (Z)Lio/github/joelkanyi/peek/core/model/KvValue;
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvValue$DoubleValue : io/github/joelkanyi/peek/core/model/KvValue {
+	public final fun getValue ()D
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvValue$FloatValue : io/github/joelkanyi/peek/core/model/KvValue {
+	public final fun getValue ()F
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvValue$IntValue : io/github/joelkanyi/peek/core/model/KvValue {
+	public final fun getValue ()I
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvValue$LongValue : io/github/joelkanyi/peek/core/model/KvValue {
+	public final fun getValue ()J
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvValue$ProtoNode : io/github/joelkanyi/peek/core/model/KvValue {
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvValue$StringSetValue : io/github/joelkanyi/peek/core/model/KvValue {
+	public final fun getValues ()Ljava/util/Set;
+}
+
+public final class io/github/joelkanyi/peek/core/model/KvValue$StringValue : io/github/joelkanyi/peek/core/model/KvValue {
+	public final fun getValue ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/model/StoreHandle {
+	public final fun getDisplayName ()Ljava/lang/String;
+	public final fun getPath ()Ljava/lang/String;
+	public final fun getPkg ()Lio/github/joelkanyi/peek/core/model/AppPackage;
+	public final fun getStat ()Lio/github/joelkanyi/peek/core/transport/FileStat;
+	public final fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
+}
+
+public final class io/github/joelkanyi/peek/core/model/StoreSnapshot {
+	public final fun getCapturedAtEpochMs ()J
+	public final fun getEntries ()Ljava/util/List;
+	public final fun getHandle ()Lio/github/joelkanyi/peek/core/model/StoreHandle;
+}
+
+public final class io/github/joelkanyi/peek/core/model/StoreType : java/lang/Enum {
+	public static final field PREFERENCES_DATASTORE Lio/github/joelkanyi/peek/core/model/StoreType;
+	public static final field PROTO_DATASTORE Lio/github/joelkanyi/peek/core/model/StoreType;
+	public static final field SHARED_PREFERENCES Lio/github/joelkanyi/peek/core/model/StoreType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/joelkanyi/peek/core/model/StoreType;
+	public static fun values ()[Lio/github/joelkanyi/peek/core/model/StoreType;
+}
+
+public final class io/github/joelkanyi/peek/core/session/PeekSession {
+	public fun <init> (Lio/github/joelkanyi/peek/core/transport/DeviceTransport;Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Lkotlinx/coroutines/CoroutineScope;)V
+	public final fun close ()V
+	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public final fun refresh ()V
+}
+
+public abstract interface class io/github/joelkanyi/peek/core/session/SessionState {
+}
+
+public final class io/github/joelkanyi/peek/core/session/SessionState$Active : io/github/joelkanyi/peek/core/session/SessionState {
+	public final fun getStores ()Ljava/util/List;
+}
+
+public final class io/github/joelkanyi/peek/core/session/SessionState$Connecting : io/github/joelkanyi/peek/core/session/SessionState {
+	public static final field INSTANCE Lio/github/joelkanyi/peek/core/session/SessionState$Connecting;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/session/SessionState$Failed : io/github/joelkanyi/peek/core/session/SessionState {
+	public final fun getError ()Lio/github/joelkanyi/peek/core/error/PeekError;
+}
+
+public final class io/github/joelkanyi/peek/core/session/SessionState$Paused : io/github/joelkanyi/peek/core/session/SessionState {
+	public final fun getError ()Lio/github/joelkanyi/peek/core/error/PeekError;
+}
+
+public abstract interface class io/github/joelkanyi/peek/core/session/StoreState {
+}
+
+public final class io/github/joelkanyi/peek/core/session/StoreState$Loaded : io/github/joelkanyi/peek/core/session/StoreState {
+	public final fun getSnapshot ()Lio/github/joelkanyi/peek/core/model/StoreSnapshot;
+}
+
+public final class io/github/joelkanyi/peek/core/session/StoreState$Loading : io/github/joelkanyi/peek/core/session/StoreState {
+	public static final field INSTANCE Lio/github/joelkanyi/peek/core/session/StoreState$Loading;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/session/StoreState$Unparseable : io/github/joelkanyi/peek/core/session/StoreState {
+	public final fun getHexPreview ()Ljava/lang/String;
+	public final fun getReason ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/joelkanyi/peek/core/transport/DeviceTransport {
+	public abstract fun exec (Lio/github/joelkanyi/peek/core/model/Device;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getCapabilities ()Lio/github/joelkanyi/peek/core/transport/TransportCapabilities;
+	public abstract fun listDebuggableProcesses (Lio/github/joelkanyi/peek/core/model/Device;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun listDevices (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun readFile (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun stat (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/joelkanyi/peek/core/transport/ExecResult {
+	public fun <init> (ILokio/ByteString;Ljava/lang/String;)V
+	public final fun getExitCode ()I
+	public final fun getStderr ()Ljava/lang/String;
+	public final fun getStdout ()Lokio/ByteString;
+}
+
+public final class io/github/joelkanyi/peek/core/transport/FileStat {
+	public fun <init> (JJ)V
+	public final fun getMtimeEpochMs ()J
+	public final fun getSizeBytes ()J
+}
+
+public final class io/github/joelkanyi/peek/core/transport/TransportCapabilities {
+	public fun <init> (ZZ)V
+	public final fun getCanPushEvents ()Z
+	public final fun getCanWrite ()Z
+}
+
