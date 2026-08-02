@@ -244,7 +244,9 @@ public final class io/github/joelkanyi/peek/core/session/PeekSession {
 	public final fun addCustomPath (Ljava/lang/String;)V
 	public final fun close ()V
 	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public final fun putValue (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lio/github/joelkanyi/peek/core/model/KvValue;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun refresh ()V
+	public final fun removeKey (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun startPolling (J)V
 	public static synthetic fun startPolling$default (Lio/github/joelkanyi/peek/core/session/PeekSession;JILjava/lang/Object;)V
 	public final fun stopPolling ()V
@@ -292,6 +294,27 @@ public final class io/github/joelkanyi/peek/core/session/StoreState$Unparseable 
 	public final fun getReason ()Ljava/lang/String;
 }
 
+public abstract interface class io/github/joelkanyi/peek/core/session/WriteOutcome {
+}
+
+public final class io/github/joelkanyi/peek/core/session/WriteOutcome$Applied : io/github/joelkanyi/peek/core/session/WriteOutcome {
+	public static final field INSTANCE Lio/github/joelkanyi/peek/core/session/WriteOutcome$Applied;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/session/WriteOutcome$AppliedRequiresAppRestart : io/github/joelkanyi/peek/core/session/WriteOutcome {
+	public static final field INSTANCE Lio/github/joelkanyi/peek/core/session/WriteOutcome$AppliedRequiresAppRestart;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/session/WriteOutcome$Refused : io/github/joelkanyi/peek/core/session/WriteOutcome {
+	public final fun getReason ()Ljava/lang/String;
+}
+
 public abstract interface class io/github/joelkanyi/peek/core/transport/DeviceTransport {
 	public abstract fun exec (Lio/github/joelkanyi/peek/core/model/Device;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getCapabilities ()Lio/github/joelkanyi/peek/core/transport/TransportCapabilities;
@@ -300,6 +323,7 @@ public abstract interface class io/github/joelkanyi/peek/core/transport/DeviceTr
 	public abstract fun listFiles (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun readFile (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun stat (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun writeFile (Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Ljava/lang/String;Lokio/ByteString;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/github/joelkanyi/peek/core/transport/ExecResult {

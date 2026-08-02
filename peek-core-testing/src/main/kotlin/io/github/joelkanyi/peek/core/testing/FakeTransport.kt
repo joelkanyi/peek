@@ -26,6 +26,7 @@ public class FakeTransport(
 ) : DeviceTransport {
 
     private val readCounts = HashMap<String, Int>()
+    private val fileStore = LinkedHashMap(files)
 
     override suspend fun listDevices(): List<Device> = devices
 
@@ -38,7 +39,7 @@ public class FakeTransport(
     override suspend fun listFiles(device: Device, pkg: AppPackage, dir: String): List<String> {
         listFailure?.let { throw it }
         val prefix = "$dir/"
-        return files.keys
+        return fileStore.keys
             .filter { it.startsWith(prefix) && '/' !in it.removePrefix(prefix) }
             .map { it.removePrefix(prefix) }
     }
@@ -49,11 +50,15 @@ public class FakeTransport(
             readCounts[path] = call + 1
             return sequence[minOf(call, sequence.lastIndex)]
         }
-        return files[path] ?: throw NoSuchElementException("no fake file at $path")
+        return fileStore[path] ?: throw NoSuchElementException("no fake file at $path")
     }
 
     override suspend fun stat(device: Device, pkg: AppPackage, path: String): FileStat? =
-        files[path]?.let { FileStat(mtimeEpochMs = 0L, sizeBytes = it.size.toLong()) }
+        fileStore[path]?.let { FileStat(mtimeEpochMs = 0L, sizeBytes = it.size.toLong()) }
+
+    override suspend fun writeFile(device: Device, pkg: AppPackage, path: String, bytes: ByteString) {
+        fileStore[path] = bytes
+    }
 
     public companion object {
         /** Convenience for building a UTF-8 text file entry. */

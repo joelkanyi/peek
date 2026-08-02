@@ -35,6 +35,9 @@ public interface DeviceTransport {
 
     /** File metadata, or `null` if the file does not exist. */
     public suspend fun stat(device: Device, pkg: AppPackage, path: String): FileStat?
+
+    /** Write [bytes] to [path] atomically (tmp + rename). Requires [TransportCapabilities.canWrite]. */
+    public suspend fun writeFile(device: Device, pkg: AppPackage, path: String, bytes: ByteString)
 }
 
 /**
