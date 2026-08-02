@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026 Joel Kanyi
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.github.joelkanyi.peek.core.codec
 
 import io.github.joelkanyi.peek.core.model.KvEntry
@@ -32,31 +47,29 @@ public class SharedPreferencesXmlCodec : StoreCodec {
 
     override val type: StoreType = StoreType.SHARED_PREFERENCES
 
-    override fun decode(handle: StoreHandle, bytes: ByteString, capturedAtEpochMs: Long): DecodeResult {
-        return try {
-            val reader = newFactory().createXMLStreamReader(bytes.toByteArray().inputStream(), "UTF-8")
-            val entries = ArrayList<KvEntry>()
-            try {
-                while (reader.hasNext()) {
-                    if (reader.next() != XMLStreamConstants.START_ELEMENT) continue
-                    when (val name = reader.localName) {
-                        "map" -> Unit // document root
-                        "string" -> entries.add(KvEntry(nameAttr(reader), KvValue.StringValue(reader.elementText)))
-                        "int" -> entries.add(KvEntry(nameAttr(reader), KvValue.IntValue(valueAttr(reader).toInt())))
-                        "long" -> entries.add(KvEntry(nameAttr(reader), KvValue.LongValue(valueAttr(reader).toLong())))
-                        "float" -> entries.add(KvEntry(nameAttr(reader), KvValue.FloatValue(valueAttr(reader).toFloat())))
-                        "boolean" -> entries.add(KvEntry(nameAttr(reader), KvValue.BoolValue(valueAttr(reader).toBooleanStrict())))
-                        "set" -> entries.add(KvEntry(nameAttr(reader), KvValue.StringSetValue(readSet(reader))))
-                        else -> error("unsupported element '$name'")
-                    }
+    override fun decode(handle: StoreHandle, bytes: ByteString, capturedAtEpochMs: Long): DecodeResult = try {
+        val reader = newFactory().createXMLStreamReader(bytes.toByteArray().inputStream(), "UTF-8")
+        val entries = ArrayList<KvEntry>()
+        try {
+            while (reader.hasNext()) {
+                if (reader.next() != XMLStreamConstants.START_ELEMENT) continue
+                when (val name = reader.localName) {
+                    "map" -> Unit // document root
+                    "string" -> entries.add(KvEntry(nameAttr(reader), KvValue.StringValue(reader.elementText)))
+                    "int" -> entries.add(KvEntry(nameAttr(reader), KvValue.IntValue(valueAttr(reader).toInt())))
+                    "long" -> entries.add(KvEntry(nameAttr(reader), KvValue.LongValue(valueAttr(reader).toLong())))
+                    "float" -> entries.add(KvEntry(nameAttr(reader), KvValue.FloatValue(valueAttr(reader).toFloat())))
+                    "boolean" -> entries.add(KvEntry(nameAttr(reader), KvValue.BoolValue(valueAttr(reader).toBooleanStrict())))
+                    "set" -> entries.add(KvEntry(nameAttr(reader), KvValue.StringSetValue(readSet(reader))))
+                    else -> error("unsupported element '$name'")
                 }
-            } finally {
-                reader.close()
             }
-            DecodeResult.Decoded(StoreSnapshot(handle, entries, capturedAtEpochMs))
-        } catch (e: Exception) {
-            DecodeResult.Failed(reason = e.message ?: "unparseable SharedPreferences XML", bytes = bytes)
+        } finally {
+            reader.close()
         }
+        DecodeResult.Decoded(StoreSnapshot(handle, entries, capturedAtEpochMs))
+    } catch (e: Exception) {
+        DecodeResult.Failed(reason = e.message ?: "unparseable SharedPreferences XML", bytes = bytes)
     }
 
     override fun encode(snapshot: StoreSnapshot): ByteString {
@@ -84,13 +97,15 @@ public class SharedPreferencesXmlCodec : StoreCodec {
     }
 
     private fun xmlEscape(text: String): String = buildString {
-        for (c in text) when (c) {
-            '&' -> append("&amp;")
-            '<' -> append("&lt;")
-            '>' -> append("&gt;")
-            '"' -> append("&quot;")
-            '\'' -> append("&apos;")
-            else -> append(c)
+        for (c in text) {
+            when (c) {
+                '&' -> append("&amp;")
+                '<' -> append("&lt;")
+                '>' -> append("&gt;")
+                '"' -> append("&quot;")
+                '\'' -> append("&apos;")
+                else -> append(c)
+            }
         }
     }
 

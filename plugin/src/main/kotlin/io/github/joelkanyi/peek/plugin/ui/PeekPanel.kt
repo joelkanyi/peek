@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026 Joel Kanyi
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.github.joelkanyi.peek.plugin.ui
 
 import com.intellij.icons.AllIcons
@@ -180,27 +195,38 @@ internal class PeekPanel(private val project: Project) {
     }
 
     private fun installHighlightRenderer() {
-        table.setDefaultRenderer(Any::class.java, object : DefaultTableCellRenderer() {
-            override fun getTableCellRendererComponent(
-                t: JTable, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int,
-            ): Component {
-                val c = super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, column)
-                if (!isSelected) {
-                    val key = tableModel.getValueAt(t.convertRowIndexToModel(row), 0) as? String ?: ""
-                    c.background = when (key) {
-                        in highlightAdded -> ADDED_BG
-                        in highlightChanged -> CHANGED_BG
-                        else -> t.background
+        table.setDefaultRenderer(
+            Any::class.java,
+            object : DefaultTableCellRenderer() {
+                override fun getTableCellRendererComponent(
+                    t: JTable,
+                    value: Any?,
+                    isSelected: Boolean,
+                    hasFocus: Boolean,
+                    row: Int,
+                    column: Int,
+                ): Component {
+                    val c = super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, column)
+                    if (!isSelected) {
+                        val key = tableModel.getValueAt(t.convertRowIndexToModel(row), 0) as? String ?: ""
+                        c.background = when (key) {
+                            in highlightAdded -> ADDED_BG
+                            in highlightChanged -> CHANGED_BG
+                            else -> t.background
+                        }
                     }
+                    return c
                 }
-                return c
-            }
-        })
+            },
+        )
     }
 
     private fun loadDevices() = scope.launch {
         val devices = runCatching { transport!!.listDevices() }
-            .getOrElse { withContext(Dispatchers.EDT) { status(PeekBundle.message("peek.status.adbError", it.message ?: "")) }; return@launch }
+            .getOrElse {
+                withContext(Dispatchers.EDT) { status(PeekBundle.message("peek.status.adbError", it.message ?: "")) }
+                return@launch
+            }
         withContext(Dispatchers.EDT) {
             suppressEvents = true
             deviceCombo.model = DefaultComboBoxModel(devices.toTypedArray())
@@ -227,9 +253,15 @@ internal class PeekPanel(private val project: Project) {
     }
 
     private fun onRefresh() {
-        val device = deviceCombo.selectedItem as? Device ?: run { status(PeekBundle.message("peek.status.pickDevice")); return }
+        val device = deviceCombo.selectedItem as? Device ?: run {
+            status(PeekBundle.message("peek.status.pickDevice"))
+            return
+        }
         val packageName = (appCombo.selectedItem as? String)?.trim().orEmpty()
-        if (packageName.isEmpty()) { status(PeekBundle.message("peek.status.pickApp")); return }
+        if (packageName.isEmpty()) {
+            status(PeekBundle.message("peek.status.pickApp"))
+            return
+        }
         startSession(device, AppPackage(packageName, pid = null))
     }
 
@@ -277,8 +309,16 @@ internal class PeekPanel(private val project: Project) {
     private fun render(state: SessionState) {
         when (state) {
             SessionState.Connecting -> status(PeekBundle.message("peek.status.loading"))
-            is SessionState.Failed -> { table.setPaintBusy(false); clearStores(); status(errorMessage(state.error)) }
-            is SessionState.Paused -> { table.setPaintBusy(false); clearStores(); status(PeekBundle.message("peek.status.paused")) }
+            is SessionState.Failed -> {
+                table.setPaintBusy(false)
+                clearStores()
+                status(errorMessage(state.error))
+            }
+            is SessionState.Paused -> {
+                table.setPaintBusy(false)
+                clearStores()
+                status(PeekBundle.message("peek.status.paused"))
+            }
             is SessionState.Active -> {
                 table.setPaintBusy(false)
                 val keepPath = storeList.selectedValue?.handle?.path
@@ -298,7 +338,8 @@ internal class PeekPanel(private val project: Project) {
             is StoreState.Loaded -> showLoaded(store)
             is StoreState.Unparseable -> {
                 currentHandle = null
-                highlightAdded = emptySet(); highlightChanged = emptySet()
+                highlightAdded = emptySet()
+                highlightChanged = emptySet()
                 tableModel.setEntries(emptyList())
                 showCard(CARD_TABLE)
                 status(PeekBundle.message("peek.status.unparseable", store.reason))
@@ -361,15 +402,25 @@ internal class PeekPanel(private val project: Project) {
         table.setPaintBusy(true)
         scope.launch {
             val outcome = runCatching { action() }.getOrNull()
-            withContext(Dispatchers.EDT) { table.setPaintBusy(false); status(outcomeStatus(outcome)) }
+            withContext(Dispatchers.EDT) {
+                table.setPaintBusy(false)
+                status(outcomeStatus(outcome))
+            }
         }
     }
 
     private fun onSnapshot() {
-        val current = session ?: run { status(PeekBundle.message("peek.status.pickApp")); return }
+        val current = session ?: run {
+            status(PeekBundle.message("peek.status.pickApp"))
+            return
+        }
         val name = Messages.showInputDialog(
-            project, PeekBundle.message("peek.snapshot.message"), PeekBundle.message("peek.snapshot.title"),
-            null, "Snapshot ${PeekSnapshotStore.getInstance().beans().size + 1}", null,
+            project,
+            PeekBundle.message("peek.snapshot.message"),
+            PeekBundle.message("peek.snapshot.title"),
+            null,
+            "Snapshot ${PeekSnapshotStore.getInstance().beans().size + 1}",
+            null,
         )?.trim()
         if (name.isNullOrEmpty()) return
         val pkg = currentApp()
@@ -387,7 +438,10 @@ internal class PeekPanel(private val project: Project) {
     }
 
     private fun onAddPath() {
-        val current = session ?: run { status(PeekBundle.message("peek.status.pickApp")); return }
+        val current = session ?: run {
+            status(PeekBundle.message("peek.status.pickApp"))
+            return
+        }
         val path = Messages.showInputDialog(project, PeekBundle.message("peek.addPath.message"), PeekBundle.message("peek.addPath.title"), null)?.trim()
         if (!path.isNullOrEmpty()) current.addCustomPath(path)
     }
@@ -397,11 +451,14 @@ internal class PeekPanel(private val project: Project) {
         storeListModel.clear()
         suppressEvents = false
         currentHandle = null
-        highlightAdded = emptySet(); highlightChanged = emptySet()
+        highlightAdded = emptySet()
+        highlightChanged = emptySet()
         tableModel.setEntries(emptyList())
     }
 
-    private fun status(text: String) { statusLabel.text = text }
+    private fun status(text: String) {
+        statusLabel.text = text
+    }
 
     private fun currentApp(): String = (appCombo.selectedItem as? String) ?: "the app"
 
@@ -424,44 +481,50 @@ internal class PeekPanel(private val project: Project) {
 
     // --- Actions ---
 
-    private inner class RefreshAction :
-        AnAction(PeekBundle.message("peek.action.refresh"), null, AllIcons.Actions.Refresh) {
+    private inner class RefreshAction : AnAction(PeekBundle.message("peek.action.refresh"), null, AllIcons.Actions.Refresh) {
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
-        override fun update(e: AnActionEvent) { e.presentation.isEnabled = session != null }
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = session != null
+        }
         override fun actionPerformed(e: AnActionEvent) = onRefresh()
     }
 
-    private inner class AddKeyAction :
-        AnAction(PeekBundle.message("peek.action.add"), null, AllIcons.General.Add) {
+    private inner class AddKeyAction : AnAction(PeekBundle.message("peek.action.add"), null, AllIcons.General.Add) {
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
-        override fun update(e: AnActionEvent) { e.presentation.isEnabled = canWrite && currentHandle != null }
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = canWrite && currentHandle != null
+        }
         override fun actionPerformed(e: AnActionEvent) = onAddKey()
     }
 
-    private inner class DeleteKeyAction :
-        AnAction(PeekBundle.message("peek.action.delete"), null, AllIcons.General.Remove) {
+    private inner class DeleteKeyAction : AnAction(PeekBundle.message("peek.action.delete"), null, AllIcons.General.Remove) {
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
-        override fun update(e: AnActionEvent) { e.presentation.isEnabled = canWrite && currentHandle != null && table.selectedRow >= 0 }
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = canWrite && currentHandle != null && table.selectedRow >= 0
+        }
         override fun actionPerformed(e: AnActionEvent) = onDeleteSelected()
     }
 
-    private inner class SnapshotAction :
-        AnAction(PeekBundle.message("peek.action.snapshot"), null, AllIcons.Vcs.ShelveSilent) {
+    private inner class SnapshotAction : AnAction(PeekBundle.message("peek.action.snapshot"), null, AllIcons.Vcs.ShelveSilent) {
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
-        override fun update(e: AnActionEvent) { e.presentation.isEnabled = session != null }
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = session != null
+        }
         override fun actionPerformed(e: AnActionEvent) = onSnapshot()
     }
 
-    private inner class AddPathAction :
-        AnAction(PeekBundle.message("peek.action.addPath"), null, AllIcons.Nodes.Folder) {
+    private inner class AddPathAction : AnAction(PeekBundle.message("peek.action.addPath"), null, AllIcons.Nodes.Folder) {
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
-        override fun update(e: AnActionEvent) { e.presentation.isEnabled = session != null }
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = session != null
+        }
         override fun actionPerformed(e: AnActionEvent) = onAddPath()
     }
 
-    private inner class ManageSnapshotsAction :
-        AnAction(PeekBundle.message("peek.action.manageSnapshots"), null, AllIcons.Vcs.History) {
-        override fun actionPerformed(e: AnActionEvent) { SnapshotsDialog(project).show() }
+    private inner class ManageSnapshotsAction : AnAction(PeekBundle.message("peek.action.manageSnapshots"), null, AllIcons.Vcs.History) {
+        override fun actionPerformed(e: AnActionEvent) {
+            SnapshotsDialog(project).show()
+        }
     }
 
     private inner class MoreGroup : DefaultActionGroup(PeekBundle.message("peek.action.more"), true) {

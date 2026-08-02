@@ -1,3 +1,18 @@
+/*
+ * Copyright 2026 Joel Kanyi
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.github.joelkanyi.peek.core.locator
 
 import io.github.joelkanyi.peek.core.model.AppPackage
@@ -18,16 +33,20 @@ public class StoreLocator(private val transport: DeviceTransport) {
     public suspend fun locate(device: Device, pkg: AppPackage): LocateResult {
         return try {
             val handles = buildList {
-                addAll(scan(device, pkg, SHARED_PREFS_DIR) { name ->
-                    if (name.endsWith(".xml")) StoreType.SHARED_PREFERENCES else null
-                })
-                addAll(scan(device, pkg, DATASTORE_DIR) { name ->
-                    when {
-                        name.endsWith(".preferences_pb") -> StoreType.PREFERENCES_DATASTORE
-                        name.endsWith(".pb") -> StoreType.PROTO_DATASTORE
-                        else -> null
-                    }
-                })
+                addAll(
+                    scan(device, pkg, SHARED_PREFS_DIR) { name ->
+                        if (name.endsWith(".xml")) StoreType.SHARED_PREFERENCES else null
+                    },
+                )
+                addAll(
+                    scan(device, pkg, DATASTORE_DIR) { name ->
+                        when {
+                            name.endsWith(".preferences_pb") -> StoreType.PREFERENCES_DATASTORE
+                            name.endsWith(".pb") -> StoreType.PROTO_DATASTORE
+                            else -> null
+                        }
+                    },
+                )
             }
             LocateResult.Located(handles)
         } catch (e: TransportException.NotDebuggable) {

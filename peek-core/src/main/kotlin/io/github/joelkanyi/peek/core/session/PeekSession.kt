@@ -1,20 +1,34 @@
+/*
+ * Copyright 2026 Joel Kanyi
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.github.joelkanyi.peek.core.session
 
 import io.github.joelkanyi.peek.core.codec.DecodeResult
 import io.github.joelkanyi.peek.core.codec.StoreCodecs
-import io.github.joelkanyi.peek.core.model.Capture
-import io.github.joelkanyi.peek.core.model.CapturedStore
 import io.github.joelkanyi.peek.core.error.PeekError
 import io.github.joelkanyi.peek.core.locator.LocateResult
 import io.github.joelkanyi.peek.core.locator.StoreLocator
 import io.github.joelkanyi.peek.core.model.AppPackage
+import io.github.joelkanyi.peek.core.model.Capture
+import io.github.joelkanyi.peek.core.model.CapturedStore
 import io.github.joelkanyi.peek.core.model.Device
 import io.github.joelkanyi.peek.core.model.KvEntry
 import io.github.joelkanyi.peek.core.model.KvValue
 import io.github.joelkanyi.peek.core.model.StoreDiff
 import io.github.joelkanyi.peek.core.model.StoreHandle
 import io.github.joelkanyi.peek.core.model.StoreSnapshot
-import io.github.joelkanyi.peek.core.model.StoreType
 import io.github.joelkanyi.peek.core.model.sameAs
 import io.github.joelkanyi.peek.core.transport.DeviceTransport
 import io.github.joelkanyi.peek.core.transport.TransportException
