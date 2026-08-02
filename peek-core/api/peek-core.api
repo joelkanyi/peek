@@ -210,20 +210,20 @@ public final class io/github/joelkanyi/peek/core/session/SessionState$Paused : i
 }
 
 public abstract interface class io/github/joelkanyi/peek/core/session/StoreState {
+	public abstract fun getHandle ()Lio/github/joelkanyi/peek/core/model/StoreHandle;
 }
 
 public final class io/github/joelkanyi/peek/core/session/StoreState$Loaded : io/github/joelkanyi/peek/core/session/StoreState {
+	public fun getHandle ()Lio/github/joelkanyi/peek/core/model/StoreHandle;
 	public final fun getSnapshot ()Lio/github/joelkanyi/peek/core/model/StoreSnapshot;
 }
 
 public final class io/github/joelkanyi/peek/core/session/StoreState$Loading : io/github/joelkanyi/peek/core/session/StoreState {
-	public static final field INSTANCE Lio/github/joelkanyi/peek/core/session/StoreState$Loading;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+	public fun getHandle ()Lio/github/joelkanyi/peek/core/model/StoreHandle;
 }
 
 public final class io/github/joelkanyi/peek/core/session/StoreState$Unparseable : io/github/joelkanyi/peek/core/session/StoreState {
+	public fun getHandle ()Lio/github/joelkanyi/peek/core/model/StoreHandle;
 	public final fun getHexPreview ()Ljava/lang/String;
 	public final fun getReason ()Ljava/lang/String;
 }

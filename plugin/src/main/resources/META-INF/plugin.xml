@@ -24,4 +24,10 @@
             icon="AllIcons.Toolwindows.ToolWindowInspection"
             factoryClass="io.github.joelkanyi.peek.plugin.ui.PeekToolWindowFactory"/>
     </extensions>
+
+    <extensions defaultExtensionNs="io.github.joelkanyi.peek">
+        <!-- The adb CLI transport works on any IDE with an Android SDK present.
+             The ddmlib provider joins here (via the optional Android dependency) later. -->
+        <transportProvider implementation="io.github.joelkanyi.peek.plugin.adb.AdbCliTransportProvider"/>
+    </extensions>
 </idea-plugin>
