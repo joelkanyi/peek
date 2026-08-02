@@ -4,13 +4,11 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import io.github.joelkanyi.peek.core.error.PeekError
@@ -36,7 +34,11 @@ import javax.swing.DefaultListModel
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.JTextField
 import javax.swing.ListSelectionModel
+import javax.swing.SwingUtilities
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 
 /**
  * The Peek tool window: pick a device and a debuggable app, then browse its
@@ -53,10 +55,10 @@ internal class PeekPanel(project: Project) {
     private val deviceCombo = ComboBox<Device>().apply {
         renderer = SimpleListCellRenderer.create("") { "${it.model} (${it.serial})" }
     }
-    private val appField = JBTextField(22).apply {
-        emptyText.text = PeekBundle.message("peek.hint.app")
+    private val appCombo = ComboBox<String>().apply {
+        isEditable = true
+        setMinimumAndPreferredWidth(JBUI.scale(280))
     }
-    private val appsButton = JButton(PeekBundle.message("peek.action.apps"))
     private val refreshButton = JButton(PeekBundle.message("peek.action.refresh"))
     private val statusLabel = JBLabel()
 
@@ -69,7 +71,9 @@ internal class PeekPanel(project: Project) {
     private val table = JBTable(tableModel)
 
     private var suppressEvents = false
-    private var installedApps: List<String> = emptyList()
+    private var filtering = false
+    private var lastFilter: String? = null
+    private var allApps: List<String> = emptyList()
     private var session: PeekSession? = null
     private var collectJob: Job? = null
 
@@ -86,8 +90,7 @@ internal class PeekPanel(project: Project) {
             add(JBLabel(PeekBundle.message("peek.label.device")))
             add(deviceCombo)
             add(JBLabel(PeekBundle.message("peek.label.app")))
-            add(appField)
-            add(appsButton)
+            add(appCombo)
             add(refreshButton)
         }
         statusLabel.border = JBUI.Borders.empty(4, 8)
@@ -102,13 +105,44 @@ internal class PeekPanel(project: Project) {
         root.add(statusLabel, BorderLayout.SOUTH)
 
         deviceCombo.addActionListener { if (!suppressEvents) onDeviceChosen() }
-        appsButton.addActionListener { chooseApp() }
-        appField.addActionListener { onRefresh() } // Enter loads
+        appCombo.addActionListener { if (!suppressEvents && !filtering) onRefresh() }
         storeList.addListSelectionListener { if (!it.valueIsAdjusting && !suppressEvents) showSelectedStore() }
         refreshButton.addActionListener { onRefresh() }
+        installAppFilter()
 
         loadDevices()
         return root
+    }
+
+    /** Live-filters the app dropdown to entries containing the typed text. */
+    private fun installAppFilter() {
+        val editor = appCombo.editor.editorComponent as? JTextField ?: return
+        editor.document.addDocumentListener(object : DocumentListener {
+            override fun insertUpdate(e: DocumentEvent) = scheduleFilter()
+            override fun removeUpdate(e: DocumentEvent) = scheduleFilter()
+            override fun changedUpdate(e: DocumentEvent) = scheduleFilter()
+        })
+    }
+
+    private fun scheduleFilter() {
+        if (filtering) return
+        SwingUtilities.invokeLater {
+            val editor = appCombo.editor.editorComponent as? JTextField ?: return@invokeLater
+            val text = editor.text
+            if (filtering || text == lastFilter) return@invokeLater
+            lastFilter = text
+            val matches = if (text.isEmpty()) allApps else allApps.filter { it.contains(text, ignoreCase = true) }
+            val caret = editor.caretPosition
+            filtering = true
+            suppressEvents = true
+            appCombo.hidePopup()
+            appCombo.model = DefaultComboBoxModel(matches.toTypedArray())
+            editor.text = text
+            editor.caretPosition = caret.coerceAtMost(text.length)
+            suppressEvents = false
+            filtering = false
+            if (matches.isNotEmpty() && editor.isFocusOwner) appCombo.showPopup()
+        }
     }
 
     private fun loadDevices() = scope.launch {
@@ -125,36 +159,25 @@ internal class PeekPanel(project: Project) {
     private fun onDeviceChosen() {
         val device = deviceCombo.selectedItem as? Device ?: return
         clearStores()
-        appField.text = ""
         status(PeekBundle.message("peek.status.loadingApps"))
         scope.launch {
             val apps = runCatching { transport!!.listDebuggableProcesses(device) }.getOrDefault(emptyList())
             withContext(Dispatchers.EDT) {
-                installedApps = apps.map { it.packageName }
+                allApps = apps.map { it.packageName }
+                lastFilter = null
+                suppressEvents = true
+                appCombo.model = DefaultComboBoxModel(allApps.toTypedArray())
+                appCombo.selectedItem = null
+                (appCombo.editor.editorComponent as? JTextField)?.text = ""
+                suppressEvents = false
                 status(PeekBundle.message("peek.status.pickApp"))
             }
         }
     }
 
-    private fun chooseApp() {
-        if (installedApps.isEmpty()) {
-            status(PeekBundle.message("peek.status.pickDevice"))
-            return
-        }
-        JBPopupFactory.getInstance()
-            .createPopupChooserBuilder(installedApps)
-            .setTitle(PeekBundle.message("peek.popup.apps"))
-            .setItemChosenCallback { pkg ->
-                appField.text = pkg
-                onRefresh()
-            }
-            .createPopup()
-            .showUnderneathOf(appsButton)
-    }
-
     private fun onRefresh() {
         val device = deviceCombo.selectedItem as? Device ?: run { status(PeekBundle.message("peek.status.pickDevice")); return }
-        val packageName = appField.text.trim()
+        val packageName = (appCombo.editor.item ?: appCombo.selectedItem)?.toString()?.trim().orEmpty()
         if (packageName.isEmpty()) { status(PeekBundle.message("peek.status.pickApp")); return }
         startSession(device, AppPackage(packageName, pid = null))
     }
