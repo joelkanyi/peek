@@ -46,8 +46,9 @@ public class StoreLocator(private val transport: DeviceTransport) {
     ): List<StoreHandle> =
         transport.listFiles(device, pkg, dir).mapNotNull { name ->
             val type = classify(name) ?: return@mapNotNull null
-            val path = "$dir/$name"
-            StoreHandle(pkg, path, type, name, transport.stat(device, pkg, path))
+            // No stat here: P1 does not use mtime, and one adb call per file is slow.
+            // P2 reintroduces it, batched, for polling.
+            StoreHandle(pkg, "$dir/$name", type, name, stat = null)
         }
 
     private companion object {
