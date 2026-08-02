@@ -128,6 +128,10 @@ public final class io/github/joelkanyi/peek/wire/MessageKt {
 	public static final field PROTOCOL_VERSION I
 }
 
+public final class io/github/joelkanyi/peek/wire/SocketsKt {
+	public static final fun peekLocalSocketName (Ljava/lang/String;)Ljava/lang/String;
+}
+
 public final class io/github/joelkanyi/peek/wire/StoreInfo {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lio/github/joelkanyi/peek/wire/StoreKind;)V
 	public final fun component1 ()Ljava/lang/String;
