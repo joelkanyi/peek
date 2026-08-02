@@ -3,7 +3,7 @@ package io.github.joelkanyi.peek.plugin.ui
 import io.github.joelkanyi.peek.core.model.KvEntry
 import javax.swing.table.AbstractTableModel
 
-/** Table model for one store's entries: Key, Type, Value. Read-only in P1. */
+/** Table model for one store's entries: Key, Type, Value. */
 internal class StoreTableModel : AbstractTableModel() {
 
     private var entries: List<KvEntry> = emptyList()
@@ -12,6 +12,8 @@ internal class StoreTableModel : AbstractTableModel() {
         this.entries = entries
         fireTableDataChanged()
     }
+
+    fun entryAt(row: Int): KvEntry? = entries.getOrNull(row)
 
     override fun getRowCount(): Int = entries.size
 
