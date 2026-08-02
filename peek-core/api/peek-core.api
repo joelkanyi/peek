@@ -254,6 +254,21 @@ public final class io/github/joelkanyi/peek/core/model/StoreType : java/lang/Enu
 	public static fun values ()[Lio/github/joelkanyi/peek/core/model/StoreType;
 }
 
+public final class io/github/joelkanyi/peek/core/session/AgentSession : io/github/joelkanyi/peek/core/session/StoreSession {
+	public static final field EDIT_TIMEOUT_MS J
+	public fun <init> (Ljava/net/Socket;Lio/github/joelkanyi/peek/core/model/AppPackage;Lkotlinx/coroutines/CoroutineScope;)V
+	public fun addCustomPath (Ljava/lang/String;)V
+	public fun capture (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun close ()V
+	public final fun connect ()V
+	public fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun putValue (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lio/github/joelkanyi/peek/core/model/KvValue;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun refresh ()V
+	public fun removeKey (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun startPolling (J)V
+	public fun stopPolling ()V
+}
+
 public final class io/github/joelkanyi/peek/core/session/CaptureDiff {
 	public final fun getStores ()Ljava/util/List;
 }
@@ -262,22 +277,21 @@ public final class io/github/joelkanyi/peek/core/session/CaptureDiffKt {
 	public static final fun diffCaptures (Lio/github/joelkanyi/peek/core/model/Capture;Lio/github/joelkanyi/peek/core/model/Capture;)Lio/github/joelkanyi/peek/core/session/CaptureDiff;
 }
 
-public final class io/github/joelkanyi/peek/core/session/PeekSession {
+public final class io/github/joelkanyi/peek/core/session/PeekSession : io/github/joelkanyi/peek/core/session/StoreSession {
 	public static final field DEFAULT_POLL_INTERVAL_MS J
 	public static final field DEFAULT_RETRY_DELAY_MS J
 	public static final field HEX_PREVIEW_BYTES I
 	public static final field MAX_ATTEMPTS I
 	public fun <init> (Lio/github/joelkanyi/peek/core/transport/DeviceTransport;Lio/github/joelkanyi/peek/core/model/Device;Lio/github/joelkanyi/peek/core/model/AppPackage;Lkotlinx/coroutines/CoroutineScope;)V
-	public final fun addCustomPath (Ljava/lang/String;)V
-	public final fun capture (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun close ()V
-	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
-	public final fun putValue (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lio/github/joelkanyi/peek/core/model/KvValue;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun refresh ()V
-	public final fun removeKey (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun startPolling (J)V
-	public static synthetic fun startPolling$default (Lio/github/joelkanyi/peek/core/session/PeekSession;JILjava/lang/Object;)V
-	public final fun stopPolling ()V
+	public fun addCustomPath (Ljava/lang/String;)V
+	public fun capture (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun close ()V
+	public fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun putValue (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lio/github/joelkanyi/peek/core/model/KvValue;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun refresh ()V
+	public fun removeKey (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun startPolling (J)V
+	public fun stopPolling ()V
 }
 
 public final class io/github/joelkanyi/peek/core/session/Presence : java/lang/Enum {
@@ -319,6 +333,22 @@ public final class io/github/joelkanyi/peek/core/session/StoreDelta {
 	public final fun getPresence ()Lio/github/joelkanyi/peek/core/session/Presence;
 	public final fun getRemoved ()Ljava/util/Set;
 	public final fun isEmpty ()Z
+}
+
+public abstract interface class io/github/joelkanyi/peek/core/session/StoreSession {
+	public abstract fun addCustomPath (Ljava/lang/String;)V
+	public abstract fun capture (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun close ()V
+	public abstract fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun putValue (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lio/github/joelkanyi/peek/core/model/KvValue;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun refresh ()V
+	public abstract fun removeKey (Lio/github/joelkanyi/peek/core/model/StoreHandle;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun startPolling (J)V
+	public abstract fun stopPolling ()V
+}
+
+public final class io/github/joelkanyi/peek/core/session/StoreSession$DefaultImpls {
+	public static synthetic fun startPolling$default (Lio/github/joelkanyi/peek/core/session/StoreSession;JILjava/lang/Object;)V
 }
 
 public abstract interface class io/github/joelkanyi/peek/core/session/StoreState {

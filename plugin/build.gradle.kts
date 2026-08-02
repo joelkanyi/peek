@@ -33,6 +33,7 @@ dependencies {
     implementation(projects.peekCore) {
         exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
     }
+    implementation(projects.peekWire)
 
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
