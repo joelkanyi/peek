@@ -9,4 +9,5 @@ plugins {
     alias(libs.plugins.intelliJPlatform) apply false
     alias(libs.plugins.changelog) apply false
     alias(libs.plugins.bcv) apply false
+    alias(libs.plugins.mavenPublish) apply false
 }

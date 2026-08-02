@@ -12,6 +12,7 @@ intelliJPlatform = "2.5.0"
 kotlin = "2.1.20"
 bcv = "0.16.3"
 agp = "8.7.3"
+mavenPublish = "0.29.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -29,3 +30,4 @@ bcv = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
