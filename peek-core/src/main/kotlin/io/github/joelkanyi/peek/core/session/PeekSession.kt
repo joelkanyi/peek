@@ -1,10 +1,9 @@
 package io.github.joelkanyi.peek.core.session
 
 import io.github.joelkanyi.peek.core.codec.DecodeResult
-import io.github.joelkanyi.peek.core.codec.PreferencesPbCodec
-import io.github.joelkanyi.peek.core.codec.ProtoDataStoreCodec
-import io.github.joelkanyi.peek.core.codec.SharedPreferencesXmlCodec
-import io.github.joelkanyi.peek.core.codec.StoreCodec
+import io.github.joelkanyi.peek.core.codec.StoreCodecs
+import io.github.joelkanyi.peek.core.model.Capture
+import io.github.joelkanyi.peek.core.model.CapturedStore
 import io.github.joelkanyi.peek.core.error.PeekError
 import io.github.joelkanyi.peek.core.locator.LocateResult
 import io.github.joelkanyi.peek.core.locator.StoreLocator
@@ -55,11 +54,6 @@ public class PeekSession internal constructor(
     ) : this(transport, device, pkg, scope, System::currentTimeMillis, DEFAULT_RETRY_DELAY_MS)
 
     private val locator = StoreLocator(transport)
-    private val codecs: Map<StoreType, StoreCodec> = mapOf(
-        StoreType.SHARED_PREFERENCES to SharedPreferencesXmlCodec(),
-        StoreType.PREFERENCES_DATASTORE to PreferencesPbCodec(),
-        StoreType.PROTO_DATASTORE to ProtoDataStoreCodec(),
-    )
 
     private var previousSnapshots: Map<String, StoreSnapshot> = emptyMap()
     private val customPaths = LinkedHashSet<String>()
@@ -84,6 +78,22 @@ public class PeekSession internal constructor(
         if (customPaths.add(path.trim())) refresh()
     }
 
+    /** Capture the raw bytes of all current stores as a named snapshot. */
+    public suspend fun capture(name: String): Capture = refreshMutex.withLock {
+        val located = locator.locate(device, pkg)
+        val handles = if (located is LocateResult.Located) {
+            located.handles + customPaths
+                .filter { path -> located.handles.none { it.path == path } }
+                .map { locator.handleFor(pkg, it) }
+        } else {
+            emptyList()
+        }
+        val stores = handles.mapNotNull { handle ->
+            runCatching { CapturedStore(handle.path, handle.type, handle.displayName, transport.readFile(device, pkg, handle.path)) }.getOrNull()
+        }
+        Capture(name, now(), stores)
+    }
+
     /** Set (or add) [key] to [value] in [handle], then reload. */
     public suspend fun putValue(handle: StoreHandle, key: String, value: KvValue): WriteOutcome =
         applyEdit(handle) { entries ->
@@ -101,7 +111,7 @@ public class PeekSession internal constructor(
     // Honest write path: stop the app (so nothing else writes and no stale cache wins),
     // re-read fresh, apply the edit, encode, write atomically, and verify by re-reading.
     private suspend fun applyEdit(handle: StoreHandle, transform: (List<KvEntry>) -> List<KvEntry>): WriteOutcome {
-        val codec = codecs[handle.type] ?: return WriteOutcome.Refused("this store type cannot be edited")
+        val codec = StoreCodecs.codecFor(handle.type)
         val outcome = refreshMutex.withLock {
             try {
                 transport.exec(device, "am force-stop ${pkg.packageName}")
@@ -179,8 +189,7 @@ public class PeekSession internal constructor(
     }
 
     private suspend fun loadStore(handle: StoreHandle, previous: StoreSnapshot?): StoreState {
-        val codec = codecs[handle.type]
-            ?: return StoreState.Unparseable(handle, PROTO_LATER, hexPreview = "")
+        val codec = StoreCodecs.codecFor(handle.type)
 
         var lastFailure: DecodeResult.Failed? = null
         // A DataStore write is a tmp-file rename, so a torn read is transient:
@@ -234,7 +243,6 @@ public class PeekSession internal constructor(
         const val DEFAULT_POLL_INTERVAL_MS = 3_000L
         const val MAX_ATTEMPTS = 2
         const val HEX_PREVIEW_BYTES = 32
-        const val PROTO_LATER = "Proto DataStore support arrives in a later version"
     }
 }
 

@@ -1,0 +1,59 @@
+package io.github.joelkanyi.peek.core.session
+
+import io.github.joelkanyi.peek.core.codec.DecodeResult
+import io.github.joelkanyi.peek.core.codec.StoreCodecs
+import io.github.joelkanyi.peek.core.model.AppPackage
+import io.github.joelkanyi.peek.core.model.Capture
+import io.github.joelkanyi.peek.core.model.CapturedStore
+import io.github.joelkanyi.peek.core.model.KvEntry
+import io.github.joelkanyi.peek.core.model.StoreHandle
+import io.github.joelkanyi.peek.core.model.sameAs
+
+/** Whether a store existed in the before capture, the after capture, or both. */
+public enum class Presence { BOTH, BEFORE_ONLY, AFTER_ONLY }
+
+/** What changed in one store between two captures. */
+public class StoreDelta internal constructor(
+    public val path: String,
+    public val displayName: String,
+    public val presence: Presence,
+    public val added: Set<String>,
+    public val changed: Set<String>,
+    public val removed: Set<String>,
+) {
+    public val isEmpty: Boolean get() = added.isEmpty() && changed.isEmpty() && removed.isEmpty()
+}
+
+/** The difference between two captures, per store. */
+public class CaptureDiff internal constructor(public val stores: List<StoreDelta>)
+
+/** Diff two captures across time, decoding each store's raw bytes on demand. */
+public fun diffCaptures(before: Capture, after: Capture): CaptureDiff {
+    val beforeByPath = before.stores.associateBy { it.path }
+    val afterByPath = after.stores.associateBy { it.path }
+
+    val deltas = (beforeByPath.keys + afterByPath.keys).map { path ->
+        val b = beforeByPath[path]
+        val a = afterByPath[path]
+        when {
+            b != null && a != null -> {
+                val bMap = decode(b).associate { it.key to it.value }
+                val aMap = decode(a).associate { it.key to it.value }
+                val changed = aMap.keys.intersect(bMap.keys)
+                    .filterTo(LinkedHashSet()) { !bMap.getValue(it).sameAs(aMap.getValue(it)) }
+                StoreDelta(path, a.displayName, Presence.BOTH, aMap.keys - bMap.keys, changed, bMap.keys - aMap.keys)
+            }
+            a != null -> StoreDelta(path, a.displayName, Presence.AFTER_ONLY, decode(a).map { it.key }.toSet(), emptySet(), emptySet())
+            else -> StoreDelta(path, b!!.displayName, Presence.BEFORE_ONLY, emptySet(), emptySet(), decode(b).map { it.key }.toSet())
+        }
+    }
+    return CaptureDiff(deltas)
+}
+
+private fun decode(store: CapturedStore): List<KvEntry> {
+    val handle = StoreHandle(AppPackage("", null), store.path, store.type, store.displayName, stat = null)
+    return when (val result = StoreCodecs.codecFor(store.type).decode(handle, store.bytes, capturedAtEpochMs = 0)) {
+        is DecodeResult.Decoded -> result.snapshot.entries
+        is DecodeResult.Failed -> emptyList()
+    }
+}
