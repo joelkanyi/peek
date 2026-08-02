@@ -1,16 +1,20 @@
 package io.github.joelkanyi.peek.plugin.ui
 
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.ui.JBSplitter
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import io.github.joelkanyi.peek.core.error.PeekError
 import io.github.joelkanyi.peek.core.model.AppPackage
 import io.github.joelkanyi.peek.core.model.Device
+import io.github.joelkanyi.peek.core.model.StoreType
 import io.github.joelkanyi.peek.core.session.PeekSession
 import io.github.joelkanyi.peek.core.session.SessionState
 import io.github.joelkanyi.peek.core.session.StoreState
@@ -18,7 +22,6 @@ import io.github.joelkanyi.peek.core.transport.DeviceTransport
 import io.github.joelkanyi.peek.plugin.PeekBundle
 import io.github.joelkanyi.peek.plugin.services.PeekProjectService
 import io.github.joelkanyi.peek.plugin.transport.TransportProvider
-import com.intellij.openapi.components.service
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,13 +30,16 @@ import kotlinx.coroutines.withContext
 import java.awt.BorderLayout
 import java.awt.FlowLayout
 import javax.swing.DefaultComboBoxModel
+import javax.swing.DefaultListModel
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.ListSelectionModel
 
 /**
  * The Peek tool window: pick a device and a debuggable app, then browse its
- * stores as typed tables. Read-only in P1. Transport work runs off the EDT; only
+ * stores as typed tables. Stores are listed on the left, the selected store's
+ * entries on the right. Read-only in P1. Transport work runs off the EDT; only
  * UI mutation touches the EDT.
  */
 internal class PeekPanel(project: Project) {
@@ -46,11 +52,14 @@ internal class PeekPanel(project: Project) {
         renderer = SimpleListCellRenderer.create("") { "${it.model} (${it.serial})" }
     }
     private val appCombo = ComboBox<String>().apply { isEditable = true }
-    private val storeCombo = ComboBox<StoreState>().apply {
-        renderer = SimpleListCellRenderer.create("") { "${it.handle.displayName} · ${it.handle.type.label()}" }
-    }
     private val refreshButton = JButton(PeekBundle.message("peek.action.refresh"))
     private val statusLabel = JBLabel()
+
+    private val storeListModel = DefaultListModel<StoreState>()
+    private val storeList = JBList(storeListModel).apply {
+        selectionMode = ListSelectionModel.SINGLE_SELECTION
+        cellRenderer = SimpleListCellRenderer.create("") { "${it.handle.displayName}  ·  ${it.handle.type.label()}" }
+    }
     private val tableModel = StoreTableModel()
     private val table = JBTable(tableModel)
 
@@ -73,18 +82,21 @@ internal class PeekPanel(project: Project) {
             add(JBLabel(PeekBundle.message("peek.label.app")))
             add(appCombo)
             add(refreshButton)
-            add(JBLabel(PeekBundle.message("peek.label.store")))
-            add(storeCombo)
         }
         statusLabel.border = JBUI.Borders.empty(4, 8)
 
+        val splitter = JBSplitter(false, 0.3f).apply {
+            firstComponent = JBScrollPane(storeList)
+            secondComponent = JBScrollPane(table)
+        }
+
         root.add(toolbar, BorderLayout.NORTH)
-        root.add(JBScrollPane(table), BorderLayout.CENTER)
+        root.add(splitter, BorderLayout.CENTER)
         root.add(statusLabel, BorderLayout.SOUTH)
 
         deviceCombo.addActionListener { if (!suppressEvents) onDeviceChosen() }
         appCombo.addActionListener { if (!suppressEvents) onRefresh() } // load stores as soon as an app is chosen
-        storeCombo.addActionListener { if (!suppressEvents) showSelectedStore() }
+        storeList.addListSelectionListener { if (!it.valueIsAdjusting && !suppressEvents) showSelectedStore() }
         refreshButton.addActionListener { onRefresh() }
 
         loadDevices()
@@ -146,16 +158,17 @@ internal class PeekPanel(project: Project) {
             }
             is SessionState.Active -> {
                 suppressEvents = true
-                storeCombo.model = DefaultComboBoxModel(state.stores.toTypedArray())
+                storeListModel.clear()
+                state.stores.forEach { storeListModel.addElement(it) }
                 suppressEvents = false
                 status(PeekBundle.message("peek.status.stores", state.stores.size))
-                if (state.stores.isNotEmpty()) showSelectedStore() else tableModel.setEntries(emptyList())
+                if (!storeListModel.isEmpty) storeList.selectedIndex = 0 else tableModel.setEntries(emptyList())
             }
         }
     }
 
     private fun showSelectedStore() {
-        when (val store = storeCombo.selectedItem as? StoreState) {
+        when (val store = storeList.selectedValue) {
             is StoreState.Loaded -> {
                 tableModel.setEntries(store.snapshot.entries)
                 status(PeekBundle.message("peek.status.entries", store.snapshot.entries.size, store.handle.displayName))
@@ -170,7 +183,7 @@ internal class PeekPanel(project: Project) {
 
     private fun clearStores() {
         suppressEvents = true
-        storeCombo.model = DefaultComboBoxModel()
+        storeListModel.clear()
         suppressEvents = false
         tableModel.setEntries(emptyList())
     }
@@ -190,8 +203,8 @@ internal class PeekPanel(project: Project) {
     }
 }
 
-private fun io.github.joelkanyi.peek.core.model.StoreType.label(): String = when (this) {
-    io.github.joelkanyi.peek.core.model.StoreType.SHARED_PREFERENCES -> "SharedPreferences"
-    io.github.joelkanyi.peek.core.model.StoreType.PREFERENCES_DATASTORE -> "Preferences DataStore"
-    io.github.joelkanyi.peek.core.model.StoreType.PROTO_DATASTORE -> "Proto DataStore"
+private fun StoreType.label(): String = when (this) {
+    StoreType.SHARED_PREFERENCES -> "SharedPreferences"
+    StoreType.PREFERENCES_DATASTORE -> "Preferences DataStore"
+    StoreType.PROTO_DATASTORE -> "Proto DataStore"
 }
