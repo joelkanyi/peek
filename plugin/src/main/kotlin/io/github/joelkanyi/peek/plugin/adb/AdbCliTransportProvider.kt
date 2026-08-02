@@ -17,7 +17,15 @@ internal class AdbCliTransportProvider : TransportProvider {
 
     private fun resolveAdbPath(): String {
         val exe = if (System.getProperty("os.name").startsWith("Windows")) "adb.exe" else "adb"
-        val fromSdk = listOfNotNull(System.getenv("ANDROID_HOME"), System.getenv("ANDROID_SDK_ROOT"))
+        val home = System.getProperty("user.home").orEmpty()
+        val sdkRoots = buildList {
+            System.getenv("ANDROID_HOME")?.let { add(it) }
+            System.getenv("ANDROID_SDK_ROOT")?.let { add(it) }
+            add("$home/Library/Android/sdk") // macOS default
+            add("$home/Android/Sdk") // Linux default
+            System.getenv("LOCALAPPDATA")?.let { add("$it/Android/Sdk") } // Windows default
+        }
+        val fromSdk = sdkRoots
             .map { File(it, "platform-tools/$exe") }
             .firstOrNull { it.canExecute() }
         return fromSdk?.absolutePath ?: exe // fall back to PATH lookup
