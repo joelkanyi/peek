@@ -4,6 +4,7 @@ import com.intellij.openapi.application.EDT
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBLabel
@@ -34,11 +35,7 @@ import javax.swing.DefaultListModel
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
-import javax.swing.JTextField
 import javax.swing.ListSelectionModel
-import javax.swing.SwingUtilities
-import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
 
 /**
  * The Peek tool window: pick a device and a debuggable app, then browse its
@@ -56,8 +53,7 @@ internal class PeekPanel(project: Project) {
         renderer = SimpleListCellRenderer.create("") { "${it.model} (${it.serial})" }
     }
     private val appCombo = ComboBox<String>().apply {
-        isEditable = true
-        setMinimumAndPreferredWidth(JBUI.scale(280))
+        setMinimumAndPreferredWidth(JBUI.scale(300))
     }
     private val refreshButton = JButton(PeekBundle.message("peek.action.refresh"))
     private val statusLabel = JBLabel()
@@ -71,9 +67,6 @@ internal class PeekPanel(project: Project) {
     private val table = JBTable(tableModel)
 
     private var suppressEvents = false
-    private var filtering = false
-    private var lastFilter: String? = null
-    private var allApps: List<String> = emptyList()
     private var session: PeekSession? = null
     private var collectJob: Job? = null
 
@@ -85,6 +78,9 @@ internal class PeekPanel(project: Project) {
             root.add(JBLabel(PeekBundle.message("peek.emptyState.noTransport")), BorderLayout.CENTER)
             return root
         }
+
+        // IntelliJ's built-in type-to-filter for the dropdown: focus it and start typing.
+        ComboboxSpeedSearch.installSpeedSearch(appCombo) { it }
 
         val toolbar = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(8), JBUI.scale(4))).apply {
             add(JBLabel(PeekBundle.message("peek.label.device")))
@@ -105,44 +101,12 @@ internal class PeekPanel(project: Project) {
         root.add(statusLabel, BorderLayout.SOUTH)
 
         deviceCombo.addActionListener { if (!suppressEvents) onDeviceChosen() }
-        appCombo.addActionListener { if (!suppressEvents && !filtering) onRefresh() }
+        appCombo.addActionListener { if (!suppressEvents) onRefresh() }
         storeList.addListSelectionListener { if (!it.valueIsAdjusting && !suppressEvents) showSelectedStore() }
         refreshButton.addActionListener { onRefresh() }
-        installAppFilter()
 
         loadDevices()
         return root
-    }
-
-    /** Live-filters the app dropdown to entries containing the typed text. */
-    private fun installAppFilter() {
-        val editor = appCombo.editor.editorComponent as? JTextField ?: return
-        editor.document.addDocumentListener(object : DocumentListener {
-            override fun insertUpdate(e: DocumentEvent) = scheduleFilter()
-            override fun removeUpdate(e: DocumentEvent) = scheduleFilter()
-            override fun changedUpdate(e: DocumentEvent) = scheduleFilter()
-        })
-    }
-
-    private fun scheduleFilter() {
-        if (filtering) return
-        SwingUtilities.invokeLater {
-            val editor = appCombo.editor.editorComponent as? JTextField ?: return@invokeLater
-            val text = editor.text
-            if (filtering || text == lastFilter) return@invokeLater
-            lastFilter = text
-            val matches = if (text.isEmpty()) allApps else allApps.filter { it.contains(text, ignoreCase = true) }
-            val caret = editor.caretPosition
-            filtering = true
-            suppressEvents = true
-            appCombo.hidePopup()
-            appCombo.model = DefaultComboBoxModel(matches.toTypedArray())
-            editor.text = text
-            editor.caretPosition = caret.coerceAtMost(text.length)
-            suppressEvents = false
-            filtering = false
-            if (matches.isNotEmpty() && editor.isFocusOwner) appCombo.showPopup()
-        }
     }
 
     private fun loadDevices() = scope.launch {
@@ -163,21 +127,18 @@ internal class PeekPanel(project: Project) {
         scope.launch {
             val apps = runCatching { transport!!.listDebuggableProcesses(device) }.getOrDefault(emptyList())
             withContext(Dispatchers.EDT) {
-                allApps = apps.map { it.packageName }
-                lastFilter = null
                 suppressEvents = true
-                appCombo.model = DefaultComboBoxModel(allApps.toTypedArray())
+                appCombo.model = DefaultComboBoxModel(apps.map { it.packageName }.toTypedArray())
                 appCombo.selectedItem = null
-                (appCombo.editor.editorComponent as? JTextField)?.text = ""
                 suppressEvents = false
-                status(PeekBundle.message("peek.status.pickApp"))
+                status(PeekBundle.message(if (apps.isEmpty()) "peek.status.noApps" else "peek.status.pickApp"))
             }
         }
     }
 
     private fun onRefresh() {
         val device = deviceCombo.selectedItem as? Device ?: run { status(PeekBundle.message("peek.status.pickDevice")); return }
-        val packageName = (appCombo.editor.item ?: appCombo.selectedItem)?.toString()?.trim().orEmpty()
+        val packageName = (appCombo.selectedItem as? String)?.trim().orEmpty()
         if (packageName.isEmpty()) { status(PeekBundle.message("peek.status.pickApp")); return }
         startSession(device, AppPackage(packageName, pid = null))
     }
