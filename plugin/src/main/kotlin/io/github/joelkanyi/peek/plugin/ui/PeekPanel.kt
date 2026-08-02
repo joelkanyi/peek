@@ -5,6 +5,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.ComboboxSpeedSearch
+import com.intellij.ui.JBColor
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBLabel
@@ -29,19 +30,24 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.Component
 import java.awt.FlowLayout
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListModel
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.JTable
 import javax.swing.ListSelectionModel
+import javax.swing.table.DefaultTableCellRenderer
 
 /**
  * The Peek tool window: pick a device and a debuggable app, then browse its
  * stores as typed tables. Stores are listed on the left, the selected store's
- * entries on the right. Read-only in P1. Transport work runs off the EDT; only
- * UI mutation touches the EDT.
+ * entries on the right. Auto-refreshes while visible; changed and added keys are
+ * highlighted. Read-only in P1. Transport work runs off the EDT; only UI
+ * mutation touches the EDT.
  */
 internal class PeekPanel(project: Project) {
 
@@ -67,6 +73,9 @@ internal class PeekPanel(project: Project) {
     private val table = JBTable(tableModel)
 
     private var suppressEvents = false
+    private var visible = true
+    private var highlightAdded: Set<String> = emptySet()
+    private var highlightChanged: Set<String> = emptySet()
     private var session: PeekSession? = null
     private var collectJob: Job? = null
 
@@ -79,8 +88,8 @@ internal class PeekPanel(project: Project) {
             return root
         }
 
-        // IntelliJ's built-in type-to-filter for the dropdown: focus it and start typing.
         ComboboxSpeedSearch.installSpeedSearch(appCombo) { it }
+        installHighlightRenderer()
 
         val toolbar = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(8), JBUI.scale(4))).apply {
             add(JBLabel(PeekBundle.message("peek.label.device")))
@@ -109,6 +118,26 @@ internal class PeekPanel(project: Project) {
         return root
     }
 
+    /** Tints rows whose key was added (green) or changed (yellow) since the last refresh. */
+    private fun installHighlightRenderer() {
+        table.setDefaultRenderer(Any::class.java, object : DefaultTableCellRenderer() {
+            override fun getTableCellRendererComponent(
+                t: JTable, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int,
+            ): Component {
+                val c = super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, column)
+                if (!isSelected) {
+                    val key = tableModel.getValueAt(t.convertRowIndexToModel(row), 0) as? String ?: ""
+                    c.background = when (key) {
+                        in highlightAdded -> ADDED_BG
+                        in highlightChanged -> CHANGED_BG
+                        else -> t.background
+                    }
+                }
+                return c
+            }
+        })
+    }
+
     private fun loadDevices() = scope.launch {
         val devices = runCatching { transport!!.listDevices() }
             .getOrElse { withContext(Dispatchers.EDT) { status(PeekBundle.message("peek.status.adbError", it.message ?: "")) }; return@launch }
@@ -122,6 +151,7 @@ internal class PeekPanel(project: Project) {
 
     private fun onDeviceChosen() {
         val device = deviceCombo.selectedItem as? Device ?: return
+        stopSession()
         clearStores()
         status(PeekBundle.message("peek.status.loadingApps"))
         scope.launch {
@@ -144,8 +174,7 @@ internal class PeekPanel(project: Project) {
     }
 
     private fun startSession(device: Device, pkg: AppPackage) {
-        collectJob?.cancel()
-        session?.close()
+        stopSession()
         table.setPaintBusy(true)
         status(PeekBundle.message("peek.status.loading"))
         val newSession = PeekSession(transport!!, device, pkg, scope)
@@ -154,6 +183,20 @@ internal class PeekPanel(project: Project) {
             newSession.state.collect { render(it) }
         }
         newSession.refresh()
+        if (visible) newSession.startPolling()
+    }
+
+    private fun stopSession() {
+        collectJob?.cancel()
+        session?.close()
+        session = null
+    }
+
+    /** Called by the tool window when its visibility changes; pauses polling while hidden. */
+    fun onVisibilityChanged(nowVisible: Boolean) {
+        visible = nowVisible
+        val current = session ?: return
+        if (nowVisible) current.startPolling() else current.stopPolling()
     }
 
     private fun render(state: SessionState) {
@@ -171,12 +214,18 @@ internal class PeekPanel(project: Project) {
             }
             is SessionState.Active -> {
                 table.setPaintBusy(false)
+                val keepPath = (storeList.selectedValue)?.handle?.path
                 suppressEvents = true
                 storeListModel.clear()
                 state.stores.forEach { storeListModel.addElement(it) }
+                val keepIndex = state.stores.indexOfFirst { it.handle.path == keepPath }
                 suppressEvents = false
                 status(PeekBundle.message("peek.status.stores", state.stores.size))
-                if (!storeListModel.isEmpty) storeList.selectedIndex = 0 else tableModel.setEntries(emptyList())
+                if (!storeListModel.isEmpty) {
+                    storeList.selectedIndex = if (keepIndex >= 0) keepIndex else 0
+                } else {
+                    tableModel.setEntries(emptyList())
+                }
             }
         }
     }
@@ -184,10 +233,21 @@ internal class PeekPanel(project: Project) {
     private fun showSelectedStore() {
         when (val store = storeList.selectedValue) {
             is StoreState.Loaded -> {
+                highlightAdded = store.diff.added
+                highlightChanged = store.diff.changed
                 tableModel.setEntries(store.snapshot.entries)
-                status(PeekBundle.message("peek.status.entries", store.snapshot.entries.size, store.handle.displayName))
+                val changedCount = store.diff.added.size + store.diff.changed.size
+                status(
+                    if (changedCount > 0) {
+                        PeekBundle.message("peek.status.entriesChanged", store.snapshot.entries.size, store.handle.displayName, changedCount)
+                    } else {
+                        PeekBundle.message("peek.status.entries", store.snapshot.entries.size, store.handle.displayName)
+                    },
+                )
             }
             is StoreState.Unparseable -> {
+                highlightAdded = emptySet()
+                highlightChanged = emptySet()
                 tableModel.setEntries(emptyList())
                 status(PeekBundle.message("peek.status.unparseable", store.reason))
             }
@@ -199,6 +259,8 @@ internal class PeekPanel(project: Project) {
         suppressEvents = true
         storeListModel.clear()
         suppressEvents = false
+        highlightAdded = emptySet()
+        highlightChanged = emptySet()
         tableModel.setEntries(emptyList())
     }
 
@@ -214,6 +276,11 @@ internal class PeekPanel(project: Project) {
         is PeekError.FileVanished -> PeekBundle.message("peek.status.unparseable", error.path)
         is PeekError.ParseFailed -> PeekBundle.message("peek.status.unparseable", error.reason)
         is PeekError.TransportFailure -> PeekBundle.message("peek.status.adbError", error.message)
+    }
+
+    private companion object {
+        val ADDED_BG = JBColor(Color(0xDD, 0xF3, 0xE0), Color(0x2B, 0x3B, 0x2E))
+        val CHANGED_BG = JBColor(Color(0xFB, 0xF1, 0xD0), Color(0x3B, 0x36, 0x22))
     }
 }
 
