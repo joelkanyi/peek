@@ -24,8 +24,11 @@ public sealed interface KvValue {
 
     public class BytesValue internal constructor(public val value: ByteString) : KvValue
 
-    /** Raw-decoded protobuf tree. Populated in P3; renders as "unsupported" in P1. */
-    public class ProtoNode internal constructor() : KvValue
+    /** Raw-decoded protobuf tree (schemaless Proto DataStore). [bytes] is kept for exact diffing. */
+    public class ProtoNode internal constructor(
+        public val fields: List<ProtoField>,
+        public val bytes: ByteString,
+    ) : KvValue
 
     public companion object {
         public fun of(value: Boolean): KvValue = BoolValue(value)
@@ -49,5 +52,5 @@ internal fun KvValue.sameAs(other: KvValue): Boolean = when (this) {
     is KvValue.StringValue -> other is KvValue.StringValue && value == other.value
     is KvValue.StringSetValue -> other is KvValue.StringSetValue && values == other.values
     is KvValue.BytesValue -> other is KvValue.BytesValue && value == other.value
-    is KvValue.ProtoNode -> other is KvValue.ProtoNode
+    is KvValue.ProtoNode -> other is KvValue.ProtoNode && bytes == other.bytes
 }

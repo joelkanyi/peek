@@ -2,6 +2,7 @@ package io.github.joelkanyi.peek.core.session
 
 import io.github.joelkanyi.peek.core.codec.DecodeResult
 import io.github.joelkanyi.peek.core.codec.PreferencesPbCodec
+import io.github.joelkanyi.peek.core.codec.ProtoDataStoreCodec
 import io.github.joelkanyi.peek.core.codec.SharedPreferencesXmlCodec
 import io.github.joelkanyi.peek.core.codec.StoreCodec
 import io.github.joelkanyi.peek.core.error.PeekError
@@ -55,6 +56,7 @@ public class PeekSession internal constructor(
     private val codecs: Map<StoreType, StoreCodec> = mapOf(
         StoreType.SHARED_PREFERENCES to SharedPreferencesXmlCodec(),
         StoreType.PREFERENCES_DATASTORE to PreferencesPbCodec(),
+        StoreType.PROTO_DATASTORE to ProtoDataStoreCodec(),
     )
 
     private var previousSnapshots: Map<String, StoreSnapshot> = emptyMap()
