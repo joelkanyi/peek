@@ -11,6 +11,12 @@ name: Run UI Tests
 on:
   workflow_dispatch
 
+# Manual matrix over Linux + Windows + macOS. If re-dispatched, cancel the older
+# run so two expensive macOS/Windows matrices do not run at once.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   testUI:
