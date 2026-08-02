@@ -189,6 +189,7 @@ public final class io/github/joelkanyi/peek/core/model/StoreType : java/lang/Enu
 }
 
 public final class io/github/joelkanyi/peek/core/session/PeekSession {
+	public static final field DEFAULT_POLL_INTERVAL_MS J
 	public static final field DEFAULT_RETRY_DELAY_MS J
 	public static final field HEX_PREVIEW_BYTES I
 	public static final field MAX_ATTEMPTS I
@@ -197,6 +198,9 @@ public final class io/github/joelkanyi/peek/core/session/PeekSession {
 	public final fun close ()V
 	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun refresh ()V
+	public final fun startPolling (J)V
+	public static synthetic fun startPolling$default (Lio/github/joelkanyi/peek/core/session/PeekSession;JILjava/lang/Object;)V
+	public final fun stopPolling ()V
 }
 
 public abstract interface class io/github/joelkanyi/peek/core/session/SessionState {
