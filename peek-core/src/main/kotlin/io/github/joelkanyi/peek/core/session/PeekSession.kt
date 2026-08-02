@@ -87,7 +87,7 @@ public class PeekSession internal constructor(
 
     private suspend fun loadStore(handle: StoreHandle): StoreState {
         val codec = codecs[handle.type]
-            ?: return StoreState.Unparseable(PROTO_LATER, hexPreview = "")
+            ?: return StoreState.Unparseable(handle, PROTO_LATER, hexPreview = "")
 
         var lastFailure: DecodeResult.Failed? = null
         // A DataStore write is a tmp-file rename, so a torn read is transient:
@@ -98,16 +98,16 @@ public class PeekSession internal constructor(
             } catch (e: TransportException.DeviceLost) {
                 throw e
             } catch (e: Exception) {
-                return StoreState.Unparseable(e.message ?: "read failed", hexPreview = "")
+                return StoreState.Unparseable(handle, e.message ?: "read failed", hexPreview = "")
             }
             when (val decoded = codec.decode(handle, bytes, now())) {
-                is DecodeResult.Decoded -> return StoreState.Loaded(decoded.snapshot)
+                is DecodeResult.Decoded -> return StoreState.Loaded(handle, decoded.snapshot)
                 is DecodeResult.Failed -> lastFailure = decoded
             }
             if (attempt == 0) delay(retryDelayMs)
         }
         val failure = lastFailure!!
-        return StoreState.Unparseable(failure.reason, hexPreview(failure.bytes))
+        return StoreState.Unparseable(handle, failure.reason, hexPreview(failure.bytes))
     }
 
     private fun hexPreview(bytes: ByteString): String {
@@ -139,11 +139,18 @@ public sealed interface SessionState {
 /** The state of a single store within an [SessionState.Active] session. */
 public sealed interface StoreState {
 
-    public data object Loading : StoreState
+    /** The store this state describes. */
+    public val handle: StoreHandle
 
-    public class Loaded internal constructor(public val snapshot: StoreSnapshot) : StoreState
+    public class Loading internal constructor(override val handle: StoreHandle) : StoreState
+
+    public class Loaded internal constructor(
+        override val handle: StoreHandle,
+        public val snapshot: StoreSnapshot,
+    ) : StoreState
 
     public class Unparseable internal constructor(
+        override val handle: StoreHandle,
         public val reason: String,
         public val hexPreview: String,
     ) : StoreState
