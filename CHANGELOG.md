@@ -12,3 +12,4 @@
 - Proto DataStore decoding: schemaless protobuf shown as an expandable field tree.
 - Custom store paths, to reach stores outside the standard directories.
 - Editing SharedPreferences and Preferences DataStore values (edit, add, delete), written back over adb after force-stopping the app, with honest outcomes.
+- Snapshots: capture an app's stores at a point in time and compare two snapshots to see what changed across time.
