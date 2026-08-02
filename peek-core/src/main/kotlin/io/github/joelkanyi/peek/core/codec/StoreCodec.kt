@@ -28,21 +28,3 @@ public sealed interface DecodeResult {
         public val bytes: ByteString,
     ) : DecodeResult
 }
-
-/** Decodes SharedPreferences XML. Implemented in P1. */
-public class SharedPreferencesXmlCodec : StoreCodec {
-    override val type: StoreType = StoreType.SHARED_PREFERENCES
-
-    override fun decode(handle: StoreHandle, bytes: ByteString, capturedAtEpochMs: Long): DecodeResult {
-        TODO("P1: parse the SharedPreferences XML schema")
-    }
-}
-
-/** Decodes a Preferences DataStore `.preferences_pb` file. Implemented in P1. */
-public class PreferencesPbCodec : StoreCodec {
-    override val type: StoreType = StoreType.PREFERENCES_DATASTORE
-
-    override fun decode(handle: StoreHandle, bytes: ByteString, capturedAtEpochMs: Long): DecodeResult {
-        TODO("P1: hand-decode the preferences.proto wire format over Okio")
-    }
-}
