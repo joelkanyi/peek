@@ -27,6 +27,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okio.ByteString
 
 /**
@@ -56,6 +58,8 @@ public class PeekSession internal constructor(
     )
 
     private var previousSnapshots: Map<String, StoreSnapshot> = emptyMap()
+    private val refreshMutex = Mutex()
+    private var policy: RefreshPolicy? = null
 
     private val _state = MutableStateFlow<SessionState>(SessionState.Connecting)
 
@@ -67,38 +71,55 @@ public class PeekSession internal constructor(
     /** Re-read every store now. Manual in P1; driven by a policy in P2. */
     public fun refresh() {
         job?.cancel()
-        job = scope.launch {
-            try {
-                when (val located = locator.locate(device, pkg)) {
-                    is LocateResult.NotDebuggable ->
-                        _state.value = SessionState.Failed(PeekError.NotDebuggable(pkg.packageName))
-                    is LocateResult.PackageNotFound ->
-                        _state.value = SessionState.Failed(PeekError.PackageNotFound(pkg.packageName))
-                    is LocateResult.Located -> {
-                        // Load every store concurrently: each is an independent adb round trip.
-                        // Read the baseline before the fan-out; update it after joining (no shared writes).
-                        val baseline = previousSnapshots
-                        val stores = coroutineScope {
-                            located.handles.map { async { loadStore(it, baseline[it.path]) } }.awaitAll()
-                        }
-                        previousSnapshots = baseline + stores.filterIsInstance<StoreState.Loaded>()
-                            .associate { it.handle.path to it.snapshot }
-                        _state.value = SessionState.Active(stores)
-                    }
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: TransportException.DeviceLost) {
-                _state.value = SessionState.Paused(PeekError.DeviceLost(device.serial))
-            } catch (e: Exception) {
-                _state.value = SessionState.Failed(PeekError.TransportFailure(e.message ?: "transport failure"))
-            }
-        }
+        job = scope.launch { doRefresh() }
+    }
+
+    /** Begin polling every [intervalMs]. Idempotent; call [stopPolling] to pause. */
+    public fun startPolling(intervalMs: Long = DEFAULT_POLL_INTERVAL_MS) {
+        policy?.stop()
+        policy = RefreshPolicy(scope, intervalMs) { doRefresh() }.also { it.start() }
+    }
+
+    /** Stop polling. The last loaded state remains visible. */
+    public fun stopPolling() {
+        policy?.stop()
+        policy = null
     }
 
     /** Stop the session and release its resources. */
     public fun close() {
+        stopPolling()
         job?.cancel()
+    }
+
+    // Serialized so a manual refresh and a poll tick never run concurrently
+    // (they share previousSnapshots and the state flow).
+    private suspend fun doRefresh() = refreshMutex.withLock {
+        try {
+            when (val located = locator.locate(device, pkg)) {
+                is LocateResult.NotDebuggable ->
+                    _state.value = SessionState.Failed(PeekError.NotDebuggable(pkg.packageName))
+                is LocateResult.PackageNotFound ->
+                    _state.value = SessionState.Failed(PeekError.PackageNotFound(pkg.packageName))
+                is LocateResult.Located -> {
+                    // Load every store concurrently: each is an independent adb round trip.
+                    // Read the baseline before the fan-out; update it after joining (no shared writes).
+                    val baseline = previousSnapshots
+                    val stores = coroutineScope {
+                        located.handles.map { async { loadStore(it, baseline[it.path]) } }.awaitAll()
+                    }
+                    previousSnapshots = baseline + stores.filterIsInstance<StoreState.Loaded>()
+                        .associate { it.handle.path to it.snapshot }
+                    _state.value = SessionState.Active(stores)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: TransportException.DeviceLost) {
+            _state.value = SessionState.Paused(PeekError.DeviceLost(device.serial))
+        } catch (e: Exception) {
+            _state.value = SessionState.Failed(PeekError.TransportFailure(e.message ?: "transport failure"))
+        }
     }
 
     private suspend fun loadStore(handle: StoreHandle, previous: StoreSnapshot?): StoreState {
@@ -147,6 +168,7 @@ public class PeekSession internal constructor(
 
     private companion object {
         const val DEFAULT_RETRY_DELAY_MS = 200L
+        const val DEFAULT_POLL_INTERVAL_MS = 3_000L
         const val MAX_ATTEMPTS = 2
         const val HEX_PREVIEW_BYTES = 32
         const val PROTO_LATER = "Proto DataStore support arrives in a later version"

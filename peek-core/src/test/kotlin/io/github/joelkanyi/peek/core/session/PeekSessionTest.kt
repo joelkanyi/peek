@@ -18,7 +18,9 @@ import io.github.joelkanyi.peek.core.testing.FakeTransport
 import io.github.joelkanyi.peek.core.transport.TransportException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okio.ByteString.Companion.encodeUtf8
 import kotlin.test.Test
@@ -130,6 +132,28 @@ class PeekSessionTest {
         assertThat(updated.diff.changed).contains("count")
         assertThat(updated.diff.added).contains("added")
         assertThat(updated.diff.removed).contains("gone")
+    }
+
+    @Test
+    fun `polling re-reads and diffs on each interval`() = runTest(UnconfinedTestDispatcher()) {
+        val v1 = preferencesPb("count" to vInt(1))
+        val v2 = preferencesPb("count" to vInt(2))
+        val path = "files/datastore/s.preferences_pb"
+        val transport = FakeTransport(files = mapOf(path to v1), readSequences = mapOf(path to listOf(v1, v2)))
+        val s = PeekSession(transport, device, pkg, this, now = { 0L }, retryDelayMs = 1)
+
+        s.startPolling(intervalMs = 1_000)
+
+        advanceTimeBy(1_001); runCurrent()
+        val first = (s.state.value as SessionState.Active).stores.single() as StoreState.Loaded
+        assertThat((first.snapshot.entries.single().value as KvValue.IntValue).value).isEqualTo(1)
+
+        advanceTimeBy(1_000); runCurrent()
+        val second = (s.state.value as SessionState.Active).stores.single() as StoreState.Loaded
+        assertThat((second.snapshot.entries.single().value as KvValue.IntValue).value).isEqualTo(2)
+        assertThat(second.diff.changed).contains("count")
+
+        s.stopPolling()
     }
 
     @Test
