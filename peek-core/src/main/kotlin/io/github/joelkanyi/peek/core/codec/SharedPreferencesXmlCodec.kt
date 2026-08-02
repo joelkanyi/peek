@@ -6,6 +6,7 @@ import io.github.joelkanyi.peek.core.model.StoreHandle
 import io.github.joelkanyi.peek.core.model.StoreSnapshot
 import io.github.joelkanyi.peek.core.model.StoreType
 import okio.ByteString
+import okio.ByteString.Companion.encodeUtf8
 import javax.xml.stream.XMLInputFactory
 import javax.xml.stream.XMLStreamConstants
 import javax.xml.stream.XMLStreamReader
@@ -55,6 +56,41 @@ public class SharedPreferencesXmlCodec : StoreCodec {
             DecodeResult.Decoded(StoreSnapshot(handle, entries, capturedAtEpochMs))
         } catch (e: Exception) {
             DecodeResult.Failed(reason = e.message ?: "unparseable SharedPreferences XML", bytes = bytes)
+        }
+    }
+
+    override fun encode(snapshot: StoreSnapshot): ByteString {
+        val sb = StringBuilder()
+        sb.append("<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n")
+        sb.append("<map>\n")
+        for (entry in snapshot.entries) {
+            val name = xmlEscape(entry.key)
+            when (val v = entry.value) {
+                is KvValue.StringValue -> sb.append("    <string name=\"$name\">${xmlEscape(v.value)}</string>\n")
+                is KvValue.IntValue -> sb.append("    <int name=\"$name\" value=\"${v.value}\" />\n")
+                is KvValue.LongValue -> sb.append("    <long name=\"$name\" value=\"${v.value}\" />\n")
+                is KvValue.FloatValue -> sb.append("    <float name=\"$name\" value=\"${v.value}\" />\n")
+                is KvValue.BoolValue -> sb.append("    <boolean name=\"$name\" value=\"${v.value}\" />\n")
+                is KvValue.StringSetValue -> {
+                    sb.append("    <set name=\"$name\">\n")
+                    v.values.forEach { sb.append("        <string>${xmlEscape(it)}</string>\n") }
+                    sb.append("    </set>\n")
+                }
+                else -> throw UnsupportedOperationException("value type not supported in SharedPreferences: ${v::class.simpleName}")
+            }
+        }
+        sb.append("</map>\n")
+        return sb.toString().encodeUtf8()
+    }
+
+    private fun xmlEscape(text: String): String = buildString {
+        for (c in text) when (c) {
+            '&' -> append("&amp;")
+            '<' -> append("&lt;")
+            '>' -> append("&gt;")
+            '"' -> append("&quot;")
+            '\'' -> append("&apos;")
+            else -> append(c)
         }
     }
 

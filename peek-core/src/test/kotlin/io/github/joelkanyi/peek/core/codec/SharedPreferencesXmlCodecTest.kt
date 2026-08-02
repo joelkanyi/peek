@@ -46,6 +46,27 @@ class SharedPreferencesXmlCodecTest {
     }
 
     @Test
+    fun `encode then decode preserves all values including escaping`() {
+        val xml = """
+            <map>
+                <string name="user">a &amp; b &lt;c&gt;</string>
+                <int name="count" value="42" />
+                <long name="ts" value="1712" />
+                <float name="ratio" value="0.5" />
+                <boolean name="flag" value="true" />
+                <set name="tags"><string>beta</string><string>offline</string></set>
+            </map>
+        """.trimIndent()
+        val original = (decode(xml) as DecodeResult.Decoded).snapshot
+
+        val reencoded = codec.encode(original)
+        val roundTripped = (codec.decode(handle(StoreType.SHARED_PREFERENCES), reencoded, 0) as DecodeResult.Decoded).snapshot
+
+        assertThat(roundTripped.entries.map { it.key to it.value.unwrap() })
+            .isEqualTo(original.entries.map { it.key to it.value.unwrap() })
+    }
+
+    @Test
     fun `empty string element decodes to empty string`() {
         val xml = "<map><string name=\"empty\"></string></map>"
         val snapshot = (decode(xml) as DecodeResult.Decoded).snapshot

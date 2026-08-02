@@ -45,6 +45,27 @@ class PreferencesPbCodecTest {
     }
 
     @Test
+    fun `encode then decode preserves all values`() {
+        val bytes = preferencesPb(
+            "flag" to vBool(true),
+            "count" to vInt(42),
+            "ts" to vLong(1712L),
+            "ratio" to vFloat(0.5f),
+            "threshold" to vDouble(0.65),
+            "user" to vString("joel"),
+            "tags" to vStringSet("beta", "offline"),
+            "blob" to vBytes("0102".decodeHex()),
+        )
+        val h = handle(StoreType.PREFERENCES_DATASTORE)
+        val original = (codec.decode(h, bytes, 0) as DecodeResult.Decoded).snapshot
+
+        val roundTripped = (codec.decode(h, codec.encode(original), 0) as DecodeResult.Decoded).snapshot
+
+        assertThat(roundTripped.entries.map { it.key to it.value.unwrap() })
+            .isEqualTo(original.entries.map { it.key to it.value.unwrap() })
+    }
+
+    @Test
     fun `negative int32 round-trips`() {
         val bytes = preferencesPb("delta" to vInt(-5))
         val snapshot = (codec.decode(handle(StoreType.PREFERENCES_DATASTORE), bytes, 0) as DecodeResult.Decoded).snapshot

@@ -31,6 +31,9 @@ public class ProtoDataStoreCodec : StoreCodec {
         }
     }
 
+    override fun encode(snapshot: StoreSnapshot): ByteString =
+        throw UnsupportedOperationException("schemaless proto stores are read-only until schema resolution (P5/P7)")
+
     private fun parseMessage(bytes: ByteString, depth: Int): List<ProtoField> {
         val reader = ProtoReader(bytes)
         val fields = ArrayList<ProtoField>()
