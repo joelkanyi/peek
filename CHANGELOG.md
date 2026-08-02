@@ -3,13 +3,14 @@
 # Peek Changelog
 
 ## [Unreleased]
+
+First release. Inspect and edit an Android app's key-value storage from the IDE.
+
 ### Added
-- Project skeleton: `peek-core` (pure JVM domain and transport seam), `peek-core-testing` (FakeTransport fixture), and the `plugin` module.
-- SharedPreferences XML and Preferences DataStore (`.preferences_pb`) codecs, hand-decoded over Okio.
-- Store locator, and a session pipeline (locate, fetch, decode) with torn-read retry and device-loss handling.
-- adb command-line transport and a read-only tool window: pick a device and debuggable app, browse stores as typed, searchable tables.
-- Auto-refresh while the tool window is visible, with changed and added keys highlighted.
-- Proto DataStore decoding: schemaless protobuf shown as an expandable field tree.
-- Custom store paths, to reach stores outside the standard directories.
-- Editing SharedPreferences and Preferences DataStore values (edit, add, delete), written back over adb after force-stopping the app, with honest outcomes.
-- Snapshots: capture an app's stores at a point in time and compare two snapshots to see what changed across time.
+- **Browse** SharedPreferences, Preferences DataStore (`.preferences_pb`, hand-decoded), and Proto DataStore (schemaless field tree) of any debuggable app over adb, as typed, searchable tables. No changes to the app required.
+- **Live refresh** while the tool window is visible, with changed and added keys highlighted; the device list stays current as emulators come and go.
+- **Editing**: edit, add, and delete values. Over adb, writes are applied safely (force-stop then atomic write) with honest outcomes; with the agent, edits are live and require no restart.
+- **Custom store paths** for stores outside the standard directories.
+- **Snapshots**: capture an app's stores at a point in time, then compare two snapshots to see exactly what changed. Persisted across restarts.
+- **Live mode** via the optional `io.github.joelkanyi:peek-runtime` debug dependency: instant push updates and no-restart editing that fires the app's own listeners. Currently serves SharedPreferences.
+- Native tool window UI: an icon action toolbar with an overflow menu and the tool window gear menu.
