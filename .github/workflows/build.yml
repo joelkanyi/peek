@@ -1,0 +1,41 @@
+# CI: check every module, verify the plugin configuration, and build the plugin zip.
+# Lean and cost-optimized: Linux only, no macOS runners, no binary plugin verifier,
+# no Qodana. Runs on pushes to main and on pull requests.
+name: Build
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Sources
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Check and build
+        run: ./gradlew spotlessCheck apiCheck test :plugin:verifyPluginProjectConfiguration :plugin:buildPlugin
+
+      - name: Upload plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: peek-plugin
+          path: plugin/build/distributions/*.zip
