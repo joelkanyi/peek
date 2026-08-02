@@ -6,6 +6,7 @@ import io.github.joelkanyi.peek.core.model.StoreHandle
 import io.github.joelkanyi.peek.core.model.StoreSnapshot
 import io.github.joelkanyi.peek.core.model.StoreType
 import okio.ByteString
+import okio.ByteString.Companion.encodeUtf8
 
 /**
  * Decodes a Preferences DataStore `.preferences_pb` file. The file is a plainly
@@ -46,6 +47,36 @@ public class PreferencesPbCodec : StoreCodec {
             DecodeResult.Failed(reason = e.message ?: "unparseable preferences_pb", bytes = bytes)
         }
     }
+
+    override fun encode(snapshot: StoreSnapshot): ByteString {
+        val message = ProtoWriter()
+        for (entry in snapshot.entries) {
+            val mapEntry = ProtoWriter()
+                .lengthField(1, entry.key.encodeUtf8())
+                .lengthField(2, encodeValue(entry.value))
+                .toByteString()
+            message.lengthField(1, mapEntry)
+        }
+        return message.toByteString()
+    }
+
+    private fun encodeValue(value: KvValue): ByteString = ProtoWriter().apply {
+        when (value) {
+            is KvValue.BoolValue -> varintField(1, if (value.value) 1 else 0)
+            is KvValue.FloatValue -> fixed32Field(2, value.value.toRawBits())
+            is KvValue.IntValue -> varintField(3, value.value.toLong())
+            is KvValue.LongValue -> varintField(4, value.value)
+            is KvValue.StringValue -> lengthField(5, value.value.encodeUtf8())
+            is KvValue.StringSetValue -> {
+                val set = ProtoWriter()
+                value.values.forEach { set.lengthField(1, it.encodeUtf8()) }
+                lengthField(6, set.toByteString())
+            }
+            is KvValue.DoubleValue -> fixed64Field(7, value.value.toRawBits())
+            is KvValue.BytesValue -> lengthField(8, value.value)
+            is KvValue.ProtoNode -> throw UnsupportedOperationException("proto values are not editable in a Preferences DataStore")
+        }
+    }.toByteString()
 
     /** A single `map<string, Value>` entry: field 1 = key (string), field 2 = value (Value message). */
     private fun decodeEntry(bytes: ByteString): KvEntry {

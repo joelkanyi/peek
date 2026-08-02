@@ -16,6 +16,9 @@ public interface StoreCodec {
 
     /** Decode [bytes] read at [capturedAtEpochMs] into a snapshot, or report why it failed. */
     public fun decode(handle: StoreHandle, bytes: ByteString, capturedAtEpochMs: Long): DecodeResult
+
+    /** Encode a (possibly edited) snapshot back to bytes. Throws for formats that cannot be written. */
+    public fun encode(snapshot: StoreSnapshot): ByteString
 }
 
 /** Outcome of a [StoreCodec.decode] call. [Failed] keeps the bytes for a hex preview. */

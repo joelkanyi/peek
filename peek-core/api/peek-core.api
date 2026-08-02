@@ -13,6 +13,7 @@ public final class io/github/joelkanyi/peek/core/codec/DecodeResult$Failed : io/
 public final class io/github/joelkanyi/peek/core/codec/PreferencesPbCodec : io/github/joelkanyi/peek/core/codec/StoreCodec {
 	public fun <init> ()V
 	public fun decode (Lio/github/joelkanyi/peek/core/model/StoreHandle;Lokio/ByteString;J)Lio/github/joelkanyi/peek/core/codec/DecodeResult;
+	public fun encode (Lio/github/joelkanyi/peek/core/model/StoreSnapshot;)Lokio/ByteString;
 	public fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
 }
 
@@ -20,17 +21,20 @@ public final class io/github/joelkanyi/peek/core/codec/ProtoDataStoreCodec : io/
 	public static final field MAX_DEPTH I
 	public fun <init> ()V
 	public fun decode (Lio/github/joelkanyi/peek/core/model/StoreHandle;Lokio/ByteString;J)Lio/github/joelkanyi/peek/core/codec/DecodeResult;
+	public fun encode (Lio/github/joelkanyi/peek/core/model/StoreSnapshot;)Lokio/ByteString;
 	public fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
 }
 
 public final class io/github/joelkanyi/peek/core/codec/SharedPreferencesXmlCodec : io/github/joelkanyi/peek/core/codec/StoreCodec {
 	public fun <init> ()V
 	public fun decode (Lio/github/joelkanyi/peek/core/model/StoreHandle;Lokio/ByteString;J)Lio/github/joelkanyi/peek/core/codec/DecodeResult;
+	public fun encode (Lio/github/joelkanyi/peek/core/model/StoreSnapshot;)Lokio/ByteString;
 	public fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
 }
 
 public abstract interface class io/github/joelkanyi/peek/core/codec/StoreCodec {
 	public abstract fun decode (Lio/github/joelkanyi/peek/core/model/StoreHandle;Lokio/ByteString;J)Lio/github/joelkanyi/peek/core/codec/DecodeResult;
+	public abstract fun encode (Lio/github/joelkanyi/peek/core/model/StoreSnapshot;)Lokio/ByteString;
 	public abstract fun getType ()Lio/github/joelkanyi/peek/core/model/StoreType;
 }
 
