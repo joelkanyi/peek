@@ -38,3 +38,16 @@ public sealed interface KvValue {
         public fun of(value: ByteString): KvValue = BytesValue(value)
     }
 }
+
+/** Structural equality for diffing (the value classes use identity equality). */
+internal fun KvValue.sameAs(other: KvValue): Boolean = when (this) {
+    is KvValue.BoolValue -> other is KvValue.BoolValue && value == other.value
+    is KvValue.IntValue -> other is KvValue.IntValue && value == other.value
+    is KvValue.LongValue -> other is KvValue.LongValue && value == other.value
+    is KvValue.FloatValue -> other is KvValue.FloatValue && value == other.value
+    is KvValue.DoubleValue -> other is KvValue.DoubleValue && value == other.value
+    is KvValue.StringValue -> other is KvValue.StringValue && value == other.value
+    is KvValue.StringSetValue -> other is KvValue.StringSetValue && values == other.values
+    is KvValue.BytesValue -> other is KvValue.BytesValue && value == other.value
+    is KvValue.ProtoNode -> other is KvValue.ProtoNode
+}
