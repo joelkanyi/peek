@@ -83,8 +83,8 @@ repo (template's `build.yml`/`release.yml` workflows adapted, My* branding
 removed).
 
 - Plugin signing: JetBrains Marketplace signing via env vars
-  `CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`
-  (`signPlugin` task). Never committed.
+  `CERTIFICATE_CHAIN`, `PRIVATE_KEY` (`signPlugin` task). The key is
+  unencrypted, so no password is set. Never committed.
 - Publish token: `PUBLISH_TOKEN` env var (`publishPlugin` task).
 - Pre-publish gate: `./gradlew verifyPlugin` (Plugin Verifier over the CI
   matrix: IC+Android and Android Studio builds) + `test`.
