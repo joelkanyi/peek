@@ -30,12 +30,7 @@ internal object WireType {
 /** Thrown when the byte stream is not valid protobuf. */
 internal class ProtoParseException(message: String) : Exception(message)
 
-/**
- * A minimal protobuf wire-format reader over Okio. It decodes tags and the four
- * wire types Peek needs; it knows nothing about any schema. The Preferences
- * DataStore codec drives it with the known `preferences.proto` layout; P3's raw
- * decoder will drive it schemalessly.
- */
+/** A minimal protobuf wire-format reader over Okio. */
 internal class ProtoReader(private val source: BufferedSource) {
 
     constructor(bytes: ByteString) : this(Buffer().write(bytes))

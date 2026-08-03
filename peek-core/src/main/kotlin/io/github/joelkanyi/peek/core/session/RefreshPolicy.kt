@@ -21,11 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-/**
- * A scope-owned timing loop that invokes [onTick] every [intervalMs]. It is
- * paused and resumed by the tool window's visibility, so Peek does no device
- * traffic while it is hidden. Testable on virtual time.
- */
+/** A scope-owned timing loop that invokes [onTick] every [intervalMs]. */
 internal class RefreshPolicy(
     private val scope: CoroutineScope,
     private val intervalMs: Long,

@@ -50,11 +50,7 @@ import okio.sink
 import okio.source
 import java.net.Socket
 
-/**
- * A [StoreSession] backed by the on-device agent over a socket. Stores arrive
- * decoded; the agent pushes changes (no polling); edits are live (the app reacts
- * with no restart, so outcomes are [WriteOutcome.Applied]).
- */
+/** A [StoreSession] backed by the on-device agent over a socket. */
 public class AgentSession(
     private val socket: Socket,
     private val pkg: AppPackage,
@@ -133,11 +129,11 @@ public class AgentSession(
         }
     }
 
-    override fun startPolling(intervalMs: Long) {} // push-based; nothing to poll
+    override fun startPolling(intervalMs: Long) {}
 
     override fun stopPolling() {}
 
-    override fun addCustomPath(path: String) {} // the agent enumerates its own stores
+    override fun addCustomPath(path: String) {}
 
     override fun close() {
         readJob?.cancel()

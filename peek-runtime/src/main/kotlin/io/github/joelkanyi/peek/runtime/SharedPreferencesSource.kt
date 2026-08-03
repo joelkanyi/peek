@@ -24,11 +24,7 @@ import io.github.joelkanyi.peek.wire.WireEntry
 import io.github.joelkanyi.peek.wire.WireValue
 import java.io.File
 
-/**
- * Serves the app's live SharedPreferences: enumerate, read, edit, and notify on
- * change. Edits go through the real [SharedPreferences.Editor], so the app's own
- * listeners fire and it reacts without a restart.
- */
+/** Serves the app's live SharedPreferences: enumerate, read, edit, and notify on change. */
 internal class SharedPreferencesSource(private val context: Context) {
 
     private val open = HashMap<String, SharedPreferences>()

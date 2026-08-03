@@ -20,11 +20,7 @@ import io.github.joelkanyi.peek.core.model.KvValue
 import io.github.joelkanyi.peek.core.model.StoreHandle
 import kotlinx.coroutines.flow.StateFlow
 
-/**
- * A source of an app's stores that the UI can observe and edit, regardless of how
- * it is reached. [PeekSession] reaches stores over adb (files); an agent-backed
- * session reaches them live over the socket. Both expose the same [SessionState].
- */
+/** A source of an app's stores that the UI can observe and edit, regardless of how it is reached. */
 public interface StoreSession {
 
     public val state: StateFlow<SessionState>

@@ -22,11 +22,7 @@ import io.github.joelkanyi.peek.core.model.StoreType
 import io.github.joelkanyi.peek.core.transport.DeviceTransport
 import io.github.joelkanyi.peek.core.transport.TransportException
 
-/**
- * Scans a debuggable app's well-known storage directories and returns the stores
- * it finds. It works purely through [DeviceTransport], so it is agnostic of how
- * the bytes are reached (adb today, an agent later).
- */
+/** Scans a debuggable app's well-known storage directories and returns the stores it finds. */
 public class StoreLocator(private val transport: DeviceTransport) {
 
     /** Locate the key-value stores of [pkg] on [device]. */
@@ -76,8 +72,6 @@ public class StoreLocator(private val transport: DeviceTransport) {
     ): List<StoreHandle> =
         transport.listFiles(device, pkg, dir).mapNotNull { name ->
             val type = classify(name) ?: return@mapNotNull null
-            // No stat here: P1 does not use mtime, and one adb call per file is slow.
-            // P2 reintroduces it, batched, for polling.
             StoreHandle(pkg, "$dir/$name", type, name, stat = null)
         }
 

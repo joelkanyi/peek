@@ -19,11 +19,7 @@ import io.github.joelkanyi.peek.core.model.AppPackage
 import io.github.joelkanyi.peek.core.model.Device
 import okio.ByteString
 
-/**
- * The single seam through which peek-core reaches a device. Everything above it
- * is transport-agnostic: the ADB implementation ships first, a socket-agent
- * implementation joins later, and the domain never learns which one it is using.
- */
+/** The single seam through which peek-core reaches a device. */
 public interface DeviceTransport {
 
     /** What this channel can do. UI affordances are gated on these flags, not on the concrete type. */
@@ -38,11 +34,7 @@ public interface DeviceTransport {
     /** Run a shell [command] on [device] and collect its result. */
     public suspend fun exec(device: Device, command: String): ExecResult
 
-    /**
-     * File names directly inside [dir] (relative to the app's private home dir),
-     * or an empty list if the directory does not exist. Throws [TransportException]
-     * for not-debuggable, unknown-package, or device-loss conditions.
-     */
+    /** File names directly inside [dir] (relative to the app's private home dir), or an empty list if it does not exist. */
     public suspend fun listFiles(device: Device, pkg: AppPackage, dir: String): List<String>
 
     /** Read a file (path relative to the app's private home dir). */
@@ -55,10 +47,7 @@ public interface DeviceTransport {
     public suspend fun writeFile(device: Device, pkg: AppPackage, path: String, bytes: ByteString)
 }
 
-/**
- * Declares what a [DeviceTransport] supports. Read-only ADB has both flags
- * `false`; the agent channel (P6/P7) flips them on.
- */
+/** Declares what a [DeviceTransport] supports. */
 public class TransportCapabilities(
     public val canWrite: Boolean,
     public val canPushEvents: Boolean,

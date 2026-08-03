@@ -26,23 +26,7 @@ import javax.xml.stream.XMLInputFactory
 import javax.xml.stream.XMLStreamConstants
 import javax.xml.stream.XMLStreamReader
 
-/**
- * Decodes SharedPreferences XML:
- *
- * ```
- * <map>
- *   <string name="user">joel</string>
- *   <int name="count" value="3" />
- *   <long name="ts" value="1712" />
- *   <float name="ratio" value="0.5" />
- *   <boolean name="flag" value="true" />
- *   <set name="tags"><string>a</string><string>b</string></set>
- * </map>
- * ```
- *
- * Scalars carry a `value` attribute; strings carry element text; sets contain
- * `<string>` children. Document order is preserved.
- */
+/** Decodes SharedPreferences XML. */
 public class SharedPreferencesXmlCodec : StoreCodec {
 
     override val type: StoreType = StoreType.SHARED_PREFERENCES
@@ -54,7 +38,7 @@ public class SharedPreferencesXmlCodec : StoreCodec {
             while (reader.hasNext()) {
                 if (reader.next() != XMLStreamConstants.START_ELEMENT) continue
                 when (val name = reader.localName) {
-                    "map" -> Unit // document root
+                    "map" -> Unit
                     "string" -> entries.add(KvEntry(nameAttr(reader), KvValue.StringValue(reader.elementText)))
                     "int" -> entries.add(KvEntry(nameAttr(reader), KvValue.IntValue(valueAttr(reader).toInt())))
                     "long" -> entries.add(KvEntry(nameAttr(reader), KvValue.LongValue(valueAttr(reader).toLong())))

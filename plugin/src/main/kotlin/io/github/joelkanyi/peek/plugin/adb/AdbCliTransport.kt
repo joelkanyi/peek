@@ -28,12 +28,6 @@ import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import java.io.IOException
 
-/**
- * A [DeviceTransport] that drives the `adb` command-line binary. It needs no
- * Android plugin, so Peek works on any IDE with an Android SDK on the machine.
- * All blocking process work runs on [Dispatchers.IO]. Read-only: `capabilities`
- * report no writes and no push events.
- */
 internal class AdbCliTransport(private val adbPath: String) : DeviceTransport {
 
     override val capabilities: TransportCapabilities =
@@ -44,8 +38,6 @@ internal class AdbCliTransport(private val adbPath: String) : DeviceTransport {
     }
 
     override suspend fun listDebuggableProcesses(device: Device): List<AppPackage> = withContext(Dispatchers.IO) {
-        // Installed third-party packages, so an app shows up even when it is not running.
-        // Debuggability is confirmed by run-as when its stores are located.
         val result = run(listOf(adbPath, "-s", device.serial, "shell", "pm", "list", "packages", "-3"))
         parsePackageList(result.stdout.decodeToString()).map { AppPackage(it, pid = null) }
     }
@@ -58,7 +50,7 @@ internal class AdbCliTransport(private val adbPath: String) : DeviceTransport {
     override suspend fun listFiles(device: Device, pkg: AppPackage, dir: String): List<String> = withContext(Dispatchers.IO) {
         val result = run(listOf(adbPath, "-s", device.serial, "shell", "run-as", pkg.packageName, "ls", "-1", dir))
         classifyError(result.stderr, pkg.packageName, device.serial)?.let { throw it }
-        if (result.exitCode != 0) return@withContext emptyList() // directory absent
+        if (result.exitCode != 0) return@withContext emptyList()
         result.stdout.decodeToString().lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
     }
 
@@ -80,8 +72,7 @@ internal class AdbCliTransport(private val adbPath: String) : DeviceTransport {
 
     override suspend fun writeFile(device: Device, pkg: AppPackage, path: String, bytes: ByteString) = withContext(Dispatchers.IO) {
         val tmp = "$path.peek.tmp"
-        // dd takes the output path as an argument, so run-as resolves it from the app's home dir.
-        // (Shell redirection like `sh -c 'cat > file'` would run under the outer adb shell uid and fail.)
+        // dd takes the output path as an argument so run-as resolves it; shell redirection would run under the wrong uid and fail.
         val write = runWithInput(
             listOf(adbPath, "-s", device.serial, "shell", "run-as", pkg.packageName, "dd", "of=$tmp"),
             bytes,
@@ -119,10 +110,9 @@ internal class AdbCliTransport(private val adbPath: String) : DeviceTransport {
     private class ProcResult(val exitCode: Int, val stdout: ByteArray, val stderr: String)
 }
 
-/** Parse `adb devices -l`. Only devices in the `device` state are returned. */
 internal fun parseDevices(stdout: String): List<Device> =
     stdout.lineSequence()
-        .drop(1) // "List of devices attached"
+        .drop(1)
         .map { it.trim() }
         .filter { it.isNotEmpty() }
         .mapNotNull { line ->
@@ -135,7 +125,6 @@ internal fun parseDevices(stdout: String): List<Device> =
         }
         .toList()
 
-/** Parse `pm list packages -3` output into package names. */
 internal fun parsePackageList(stdout: String): List<String> =
     stdout.lineSequence()
         .map { it.trim() }
@@ -146,17 +135,15 @@ internal fun parsePackageList(stdout: String): List<String> =
         .sorted()
         .toList()
 
-/** Parse `ps -A` output into package-like process names (contain a dot, not kernel threads). */
 internal fun parseProcessNames(stdout: String): List<String> =
     stdout.lineSequence()
-        .drop(1) // header row
+        .drop(1)
         .map { it.trim().substringAfterLast(' ') }
         .filter { it.contains('.') && !it.startsWith("[") }
         .distinct()
         .sorted()
         .toList()
 
-/** Map adb/run-as stderr to a typed [TransportException], or `null` if it is not a known failure. */
 internal fun classifyError(stderr: String, packageName: String, serial: String): TransportException? {
     val s = stderr.lowercase()
     return when {

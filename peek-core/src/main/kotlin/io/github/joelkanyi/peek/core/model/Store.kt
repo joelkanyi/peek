@@ -46,10 +46,7 @@ public class KvEntry internal constructor(
     public val value: KvValue,
 )
 
-/**
- * What changed between two snapshots of the same store. Empty on the first load
- * (no baseline to compare against).
- */
+/** What changed between two snapshots of the same store. */
 public class StoreDiff internal constructor(
     public val added: Set<String>,
     public val changed: Set<String>,

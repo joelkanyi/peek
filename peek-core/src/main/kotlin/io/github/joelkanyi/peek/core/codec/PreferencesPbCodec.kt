@@ -23,24 +23,7 @@ import io.github.joelkanyi.peek.core.model.StoreType
 import okio.ByteString
 import okio.ByteString.Companion.encodeUtf8
 
-/**
- * Decodes a Preferences DataStore `.preferences_pb` file. The file is a plainly
- * serialized `PreferenceMap` message (no header, no framing):
- *
- * ```
- * message PreferenceMap { map<string, Value> preferences = 1; }
- * message Value {
- *   oneof value {
- *     bool boolean = 1; float float = 2; int32 integer = 3; int64 long = 4;
- *     string string = 5; StringSet string_set = 6; double double = 7; bytes bytes = 8;
- *   }
- * }
- * message StringSet { repeated string strings = 1; }
- * ```
- *
- * The schema is decoded by hand over [ProtoReader] rather than pulling protobuf-java
- * onto the IDE classpath.
- */
+/** Decodes a Preferences DataStore `.preferences_pb` file. */
 public class PreferencesPbCodec : StoreCodec {
 
     override val type: StoreType = StoreType.PREFERENCES_DATASTORE

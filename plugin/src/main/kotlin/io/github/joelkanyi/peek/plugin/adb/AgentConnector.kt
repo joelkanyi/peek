@@ -19,12 +19,6 @@ import io.github.joelkanyi.peek.wire.peekLocalSocketName
 import java.net.InetSocketAddress
 import java.net.Socket
 
-/**
- * Opens a socket to the on-device agent (if present) by forwarding its abstract
- * local socket to a local TCP port. Returns a connected socket; the caller
- * handshakes to confirm the agent is actually listening, and falls back to the
- * adb file transport if not.
- */
 internal object AgentConnector {
 
     fun open(serial: String, packageName: String): Socket? {

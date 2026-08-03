@@ -19,10 +19,7 @@ import android.content.Context
 import android.util.Log
 import io.github.joelkanyi.peek.wire.peekLocalSocketName
 
-/**
- * The on-device agent. Started automatically by [PeekInitProvider] in debug
- * builds; call [start] yourself only if you disable the auto-init provider.
- */
+/** The on-device agent, started automatically by [PeekInitProvider] in debug builds. */
 public object PeekRuntime {
 
     @Volatile

@@ -15,10 +15,7 @@
  */
 package io.github.joelkanyi.peek.core.error
 
-/**
- * The complete failure taxonomy. Every arm has a defined UI surface: no blank
- * tables, no silent catch. Handling stays exhaustive via `when`.
- */
+/** The complete failure taxonomy. */
 public sealed interface PeekError {
 
     /** No adb available, or no devices connected. */

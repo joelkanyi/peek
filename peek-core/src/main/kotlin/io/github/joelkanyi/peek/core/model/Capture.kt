@@ -17,11 +17,7 @@ package io.github.joelkanyi.peek.core.model
 
 import okio.ByteString
 
-/**
- * A named point-in-time snapshot of an app's stores. Each store is kept as its
- * raw bytes, so a capture reconstructs any store type exactly and diffs decode
- * on demand. Constructed by the capture action and by JSON import, so public.
- */
+/** A named point-in-time snapshot of an app's stores. */
 public class Capture(
     public val name: String,
     public val capturedAtEpochMs: Long,

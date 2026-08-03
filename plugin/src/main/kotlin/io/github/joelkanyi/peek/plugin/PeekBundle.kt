@@ -22,7 +22,6 @@ import org.jetbrains.annotations.PropertyKey
 @NonNls
 private const val BUNDLE = "messages.PeekBundle"
 
-/** User-facing strings, resolved from `messages/PeekBundle.properties`. */
 internal object PeekBundle : DynamicBundle(BUNDLE) {
 
     @JvmStatic

@@ -47,11 +47,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.ByteString
 
-/**
- * Owns the read pipeline for one (device, app) pair: locate stores, fetch, decode,
- * and expose the result as a [StateFlow]. Refresh is manual in P1; a polling policy
- * drives it in P2.
- */
+/** Owns the read pipeline for one (device, app) pair: locate stores, fetch, decode, and expose the result as a [StateFlow]. */
 public class PeekSession internal constructor(
     private val transport: DeviceTransport,
     private val device: Device,
@@ -81,7 +77,7 @@ public class PeekSession internal constructor(
 
     private var job: Job? = null
 
-    /** Re-read every store now. Manual in P1; driven by a policy in P2. */
+    /** Re-read every store now. */
     public override fun refresh() {
         job?.cancel()
         job = scope.launch { doRefresh() }
@@ -122,8 +118,7 @@ public class PeekSession internal constructor(
     public override suspend fun removeKey(handle: StoreHandle, key: String): WriteOutcome =
         applyEdit(handle) { entries -> entries.filterNot { it.key == key } }
 
-    // Honest write path: stop the app (so nothing else writes and no stale cache wins),
-    // re-read fresh, apply the edit, encode, write atomically, and verify by re-reading.
+    // Stop the app so nothing else writes and no stale cache wins, then re-read fresh, edit, write atomically, and verify by re-reading.
     private suspend fun applyEdit(handle: StoreHandle, transform: (List<KvEntry>) -> List<KvEntry>): WriteOutcome {
         val codec = StoreCodecs.codecFor(handle.type)
         val outcome = refreshMutex.withLock {
@@ -151,13 +146,13 @@ public class PeekSession internal constructor(
         return outcome
     }
 
-    /** Begin polling every [intervalMs]. Idempotent; call [stopPolling] to pause. */
+    /** Begin polling every [intervalMs]. */
     public override fun startPolling(intervalMs: Long) {
         policy?.stop()
         policy = RefreshPolicy(scope, intervalMs) { doRefresh() }.also { it.start() }
     }
 
-    /** Stop polling. The last loaded state remains visible. */
+    /** Stop polling. */
     public override fun stopPolling() {
         policy?.stop()
         policy = null
@@ -169,8 +164,7 @@ public class PeekSession internal constructor(
         job?.cancel()
     }
 
-    // Serialized so a manual refresh and a poll tick never run concurrently
-    // (they share previousSnapshots and the state flow).
+    // Serialized so a manual refresh and a poll tick never run concurrently (shared previousSnapshots and state flow).
     private suspend fun doRefresh() = refreshMutex.withLock {
         try {
             when (val located = locator.locate(device, pkg)) {
@@ -179,8 +173,7 @@ public class PeekSession internal constructor(
                 is LocateResult.PackageNotFound ->
                     _state.value = SessionState.Failed(PeekError.PackageNotFound(pkg.packageName))
                 is LocateResult.Located -> {
-                    // Load every store concurrently: each is an independent adb round trip.
-                    // Read the baseline before the fan-out; update it after joining (no shared writes).
+                    // Read the baseline before the concurrent fan-out; update it after joining (no shared writes).
                     val baseline = previousSnapshots
                     val handles = located.handles + customPaths
                         .filter { path -> located.handles.none { it.path == path } }
@@ -206,8 +199,7 @@ public class PeekSession internal constructor(
         val codec = StoreCodecs.codecFor(handle.type)
 
         var lastFailure: DecodeResult.Failed? = null
-        // A DataStore write is a tmp-file rename, so a torn read is transient:
-        // decode failure triggers exactly one retry before we give up to a hex row.
+        // A DataStore write is a tmp-file rename, so a torn read is transient: retry once before giving up to a hex row.
         repeat(MAX_ATTEMPTS) { attempt ->
             val bytes = try {
                 transport.readFile(device, pkg, handle.path)

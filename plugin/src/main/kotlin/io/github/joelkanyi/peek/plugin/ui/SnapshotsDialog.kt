@@ -32,7 +32,6 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.ListSelectionModel
 
-/** Lists captured snapshots and lets the user rename, delete, or compare them. */
 internal class SnapshotsDialog(private val project: Project) : DialogWrapper(project) {
 
     private val store = PeekSnapshotStore.getInstance()
