@@ -28,11 +28,7 @@ import okio.sink
 import okio.source
 import java.io.IOException
 
-/**
- * Listens on an abstract local socket and serves the app's SharedPreferences to
- * the Peek plugin over [WireCodec]. Handles one client at a time (the plugin);
- * pushes [Message.Changed] whenever a store changes.
- */
+/** Listens on an abstract local socket and serves the app's SharedPreferences to the Peek plugin over [WireCodec]. */
 internal class PeekAgentServer(context: Context, private val socketName: String) {
 
     private val prefs = SharedPreferencesSource(context.applicationContext)

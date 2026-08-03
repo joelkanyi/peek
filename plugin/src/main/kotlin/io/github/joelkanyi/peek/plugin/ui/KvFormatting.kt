@@ -17,7 +17,6 @@ package io.github.joelkanyi.peek.plugin.ui
 
 import io.github.joelkanyi.peek.core.model.KvValue
 
-/** Short type label shown in the Type column. */
 internal fun KvValue.typeLabel(): String = when (this) {
     is KvValue.BoolValue -> "Boolean"
     is KvValue.IntValue -> "Int"
@@ -30,7 +29,6 @@ internal fun KvValue.typeLabel(): String = when (this) {
     is KvValue.ProtoNode -> "Proto"
 }
 
-/** Human-readable value for the Value column. */
 internal fun KvValue.display(): String = when (this) {
     is KvValue.BoolValue -> value.toString()
     is KvValue.IntValue -> value.toString()

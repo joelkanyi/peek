@@ -34,7 +34,6 @@ import javax.swing.JPanel
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
-/** Picks two snapshots and shows what changed between them as a tree. */
 internal class CompareDialog(project: Project, private val captures: List<Capture>) : DialogWrapper(project) {
 
     private val beforeCombo = ComboBox(captures.toTypedArray()).apply {

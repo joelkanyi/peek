@@ -24,7 +24,6 @@ import com.intellij.openapi.wm.ex.ToolWindowEx
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import com.intellij.ui.content.ContentFactory
 
-/** Builds the Peek tool window content and pauses polling while it is hidden. */
 internal class PeekToolWindowFactory :
     ToolWindowFactory,
     DumbAware {

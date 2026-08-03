@@ -80,12 +80,6 @@ import javax.swing.JTable
 import javax.swing.ListSelectionModel
 import javax.swing.table.DefaultTableCellRenderer
 
-/**
- * The Peek tool window. A device/app picker with an icon action toolbar; stores
- * on the left, the selected store's entries (table) or proto tree on the right.
- * Auto-refreshes while visible; changed/added keys are highlighted; editing and
- * snapshots run through the toolbar and its overflow menu.
- */
 internal class PeekPanel(private val project: Project) {
 
     private val scope: CoroutineScope = project.service<PeekProjectService>().scope
@@ -177,7 +171,6 @@ internal class PeekPanel(private val project: Project) {
         return root
     }
 
-    /** Keeps the device dropdown current as emulators/devices come and go (while visible). */
     private fun startDeviceWatch() = scope.launch {
         while (isActive) {
             delay(DEVICE_POLL_MS)
@@ -196,7 +189,6 @@ internal class PeekPanel(private val project: Project) {
         deviceCombo.model = DefaultComboBoxModel(devices.toTypedArray())
         deviceCombo.selectedItem = devices.firstOrNull { it.serial == selectedSerial }
         suppressEvents = false
-        // Nothing selected yet and a device just appeared: select it (loads its apps).
         if (deviceCombo.selectedItem == null && devices.isNotEmpty()) deviceCombo.selectedIndex = 0
     }
 
@@ -214,7 +206,6 @@ internal class PeekPanel(private val project: Project) {
         return toolbar
     }
 
-    /** Secondary actions for the tool window's gear (three-dots) menu. */
     fun gearActions(): ActionGroup = DefaultActionGroup().apply {
         add(addPathAction)
         add(manageSnapshotsAction)
@@ -296,7 +287,6 @@ internal class PeekPanel(private val project: Project) {
         table.setPaintBusy(true)
         status(PeekBundle.message("peek.status.loading"))
         scope.launch {
-            // Prefer the on-device agent (live) if it answers a handshake; else adb files.
             val agent = withContext(Dispatchers.IO) { AgentConnector.open(device.serial, pkg.packageName) }
                 ?.let { socket -> AgentSession(socket, pkg, scope).also { it.connect() } }
             val agentReady = agent != null &&
@@ -504,8 +494,6 @@ internal class PeekPanel(private val project: Project) {
         is PeekError.ParseFailed -> PeekBundle.message("peek.status.unparseable", error.reason)
         is PeekError.TransportFailure -> PeekBundle.message("peek.status.adbError", error.message)
     }
-
-    // --- Actions ---
 
     private inner class RefreshAction : AnAction(PeekBundle.message("peek.action.refresh"), null, AllIcons.Actions.Refresh) {
         override fun getActionUpdateThread() = ActionUpdateThread.EDT

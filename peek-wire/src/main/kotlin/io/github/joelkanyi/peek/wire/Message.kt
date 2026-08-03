@@ -41,21 +41,15 @@ public data class StoreInfo(val id: String, val displayName: String, val kind: S
 /** One key-value pair in a store's data. */
 public data class WireEntry(val key: String, val value: WireValue)
 
-/**
- * A protocol message. Client = the Peek plugin, server = the on-device agent.
- * The agent pushes [Changed] whenever a store it exposes changes, so the plugin
- * updates live with no polling.
- */
+/** A protocol message between the Peek plugin (client) and the on-device agent (server). */
 public sealed interface Message {
 
-    // client -> server
     public data class Hello(val protocolVersion: Int) : Message
     public data object ListStores : Message
     public data class ReadStore(val storeId: String) : Message
     public data class PutValue(val storeId: String, val key: String, val value: WireValue) : Message
     public data class RemoveKey(val storeId: String, val key: String) : Message
 
-    // server -> client
     public data class Welcome(val protocolVersion: Int, val appPackage: String) : Message
     public data class StoreList(val stores: List<StoreInfo>) : Message
     public data class StoreData(val storeId: String, val entries: List<WireEntry>) : Message

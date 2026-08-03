@@ -22,7 +22,6 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 import javax.swing.tree.TreeModel
 
-/** Builds a Swing tree model from a decoded proto message. */
 internal fun buildProtoTreeModel(rootLabel: String, node: KvValue.ProtoNode): TreeModel {
     val root = DefaultMutableTreeNode(rootLabel)
     addFields(root, node.fields)

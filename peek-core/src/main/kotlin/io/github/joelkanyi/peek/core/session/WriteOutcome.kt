@@ -15,7 +15,7 @@
  */
 package io.github.joelkanyi.peek.core.session
 
-/** The result of an edit. No silent lies: every arm states exactly what happened. */
+/** The result of an edit. */
 public sealed interface WriteOutcome {
 
     /** The change is on disk and live (only possible via the runtime agent, later). */

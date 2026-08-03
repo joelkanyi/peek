@@ -21,11 +21,9 @@ import io.github.joelkanyi.peek.core.model.KvValue
 import okio.ByteString
 import okio.ByteString.Companion.decodeHex
 
-/** The value types a user can create when adding a key. */
 internal val EDITABLE_TYPES: List<String> =
     listOf("String", "Int", "Long", "Float", "Double", "Boolean", "StringSet", "Bytes")
 
-/** A zero value for the chosen type index, used to seed the value prompt when adding a key. */
 internal fun defaultForType(index: Int): KvValue = when (index) {
     0 -> KvValue.of("")
     1 -> KvValue.of(0)
@@ -37,7 +35,6 @@ internal fun defaultForType(index: Int): KvValue = when (index) {
     else -> KvValue.of(ByteString.EMPTY)
 }
 
-/** Prompt for a new value of the same type as [current]. Returns null if cancelled or invalid. */
 internal fun promptValue(project: Project, key: String, current: KvValue): KvValue? = when (current) {
     is KvValue.BoolValue -> {
         val choice = Messages.showDialog(

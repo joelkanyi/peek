@@ -25,13 +25,7 @@ import io.github.joelkanyi.peek.core.model.StoreType
 import okio.ByteString
 import okio.ByteString.Companion.encodeUtf8
 
-/**
- * Decodes an arbitrary Proto DataStore `.pb` file without its schema, the same
- * way `protoc --decode_raw` does: the wire bytes become a tree of numbered
- * fields. Each length-delimited field is guessed, in order, as a nested message,
- * then UTF-8 text, then raw bytes. The whole message is exposed as one
- * [KvValue.ProtoNode] entry, which the UI renders as a tree.
- */
+/** Decodes an arbitrary Proto DataStore `.pb` file without its schema, like `protoc --decode_raw`. */
 public class ProtoDataStoreCodec : StoreCodec {
 
     override val type: StoreType = StoreType.PROTO_DATASTORE

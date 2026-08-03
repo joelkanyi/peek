@@ -26,11 +26,6 @@ import io.github.joelkanyi.peek.core.model.CapturedStore
 import io.github.joelkanyi.peek.core.model.StoreType
 import okio.ByteString.Companion.decodeBase64
 
-/**
- * Persists captured snapshots across IDE restarts. Each store is kept as its raw
- * bytes (base64), so any store type reconstructs exactly. App-level so snapshots
- * are shared across projects.
- */
 @Service(Service.Level.APP)
 @State(name = "PeekSnapshots", storages = [Storage("peek-snapshots.xml")])
 internal class PeekSnapshotStore : PersistentStateComponent<PeekSnapshotStore.State> {
@@ -95,7 +90,6 @@ internal class PeekSnapshotStore : PersistentStateComponent<PeekSnapshotStore.St
     companion object {
         fun getInstance(): PeekSnapshotStore = service()
 
-        /** Reconstruct a [Capture] from a persisted bean. */
         fun toCapture(bean: SnapshotBean): Capture = Capture(
             name = bean.name,
             capturedAtEpochMs = bean.capturedAt,

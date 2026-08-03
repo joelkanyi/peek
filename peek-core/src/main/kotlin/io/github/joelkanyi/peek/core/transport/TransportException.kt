@@ -15,11 +15,7 @@
  */
 package io.github.joelkanyi.peek.core.transport
 
-/**
- * Failures a [DeviceTransport] raises. The mechanism detail (adb stderr text,
- * socket errors) is interpreted inside the transport and surfaced as these typed
- * cases, so the domain never parses raw output.
- */
+/** Failures a [DeviceTransport] raises. */
 public sealed class TransportException(message: String) : Exception(message) {
 
     /** The app exists but is not debuggable, so its storage cannot be read. */

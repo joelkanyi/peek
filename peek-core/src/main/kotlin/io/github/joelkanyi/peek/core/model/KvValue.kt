@@ -17,10 +17,7 @@ package io.github.joelkanyi.peek.core.model
 
 import okio.ByteString
 
-/**
- * A stored value, keeping its real on-disk type. Handling stays exhaustive via
- * `when`; [ProtoNode] is the raw-decoded tree for schemaless Proto DataStore (P3).
- */
+/** A stored value, keeping its real on-disk type. */
 public sealed interface KvValue {
 
     public class BoolValue internal constructor(public val value: Boolean) : KvValue
@@ -39,7 +36,7 @@ public sealed interface KvValue {
 
     public class BytesValue internal constructor(public val value: ByteString) : KvValue
 
-    /** Raw-decoded protobuf tree (schemaless Proto DataStore). [bytes] is kept for exact diffing. */
+    /** Raw-decoded protobuf tree (schemaless Proto DataStore). */
     public class ProtoNode internal constructor(
         public val fields: List<ProtoField>,
         public val bytes: ByteString,

@@ -20,12 +20,7 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 
-/**
- * Zero-config auto-init: the app's manifest merge picks this provider up (from a
- * debug-only dependency), and Android calls [onCreate] during app startup, before
- * any Activity. It only starts the agent; it serves no content. Remove it with
- * `tools:node="remove"` to opt out.
- */
+/** Zero-config auto-init that starts the agent during app startup; remove it with `tools:node="remove"` to opt out. */
 internal class PeekInitProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {

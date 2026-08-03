@@ -17,11 +17,7 @@ package io.github.joelkanyi.peek.core.model
 
 import okio.ByteString
 
-/**
- * A field of a schemaless protobuf message: its wire field number and a decoded
- * value. Without the `.proto` schema, field names are unknown, so only numbers
- * are shown (P5 resolves names from the project).
- */
+/** A field of a schemaless protobuf message: its wire field number and a decoded value. */
 public class ProtoField internal constructor(
     public val number: Int,
     public val value: ProtoValue,

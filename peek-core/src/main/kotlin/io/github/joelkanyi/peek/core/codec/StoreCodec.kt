@@ -20,10 +20,7 @@ import io.github.joelkanyi.peek.core.model.StoreSnapshot
 import io.github.joelkanyi.peek.core.model.StoreType
 import okio.ByteString
 
-/**
- * Decodes the raw bytes of one store format into a [StoreSnapshot]. Encoding
- * (for editing) is added per round-trippable format in P4.
- */
+/** Decodes the raw bytes of one store format into a [StoreSnapshot]. */
 public interface StoreCodec {
 
     /** The store format this codec handles. */
@@ -36,7 +33,7 @@ public interface StoreCodec {
     public fun encode(snapshot: StoreSnapshot): ByteString
 }
 
-/** Outcome of a [StoreCodec.decode] call. [Failed] keeps the bytes for a hex preview. */
+/** Outcome of a [StoreCodec.decode] call. */
 public sealed interface DecodeResult {
 
     public class Decoded internal constructor(public val snapshot: StoreSnapshot) : DecodeResult
