@@ -8,3 +8,7 @@ local.properties
 .kotlin
 .run/
 qodana.yml
+DESIGN.md
+RESEARCH.md
+ROADMAP.md
+IMPLEMENTATION-P0-P1.md
