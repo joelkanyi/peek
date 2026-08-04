@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # The IntelliJ IDE download + Gradle caches exceed the default runner disk,
       # so reclaim space first. Keep the preinstalled Android SDK (android: false)
