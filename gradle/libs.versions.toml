@@ -7,7 +7,7 @@ coroutines = "1.9.0"
 assertk = "0.28.1"
 
 # plugins
-changelog = "2.2.1"
+changelog = "2.5.0"
 intelliJPlatform = "2.5.0"
 kotlin = "2.1.20"
 bcv = "0.16.3"
