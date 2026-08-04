@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.1.1]
+
 ### Changed
 - Removed the upper IDE compatibility bound so Peek stays available in 2025.3 (253) and future releases, including current Android Studio.
 
