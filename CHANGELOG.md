@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Changed
+- Removed the upper IDE compatibility bound so Peek stays available in 2025.3 (253) and future releases, including current Android Studio.
+
+## [0.1.0]
+
 First release. Inspect and edit an Android app's key-value storage from the IDE.
 
 ### Added
