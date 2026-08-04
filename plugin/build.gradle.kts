@@ -86,7 +86,9 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
-            untilBuild = providers.gradleProperty("pluginUntilBuild")
+            // No upper bound: Peek uses only stable platform APIs, so it stays
+            // available in future IDEs. Run `verifyPlugin` before each release.
+            untilBuild = provider { null }
         }
     }
 
