@@ -120,7 +120,8 @@ public class AgentSession(
             val handle = StoreHandle(pkg, info.id, info.kind.toStoreType(), info.displayName, stat = null)
             StoreState.Loaded(handle, StoreSnapshot(handle, entries[info.id].orEmpty(), 0L), diffs[info.id] ?: StoreDiff.NONE)
         }
-        _state.value = SessionState.Active(stores)
+        val next = SessionState.Active(stores)
+        if (!_state.value.sameContentAs(next)) _state.value = next
     }
 
     override fun refresh() {

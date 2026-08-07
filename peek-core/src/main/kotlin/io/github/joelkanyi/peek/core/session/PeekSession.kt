@@ -183,7 +183,8 @@ public class PeekSession internal constructor(
                     }
                     previousSnapshots = baseline + stores.filterIsInstance<StoreState.Loaded>()
                         .associate { it.handle.path to it.snapshot }
-                    _state.value = SessionState.Active(stores)
+                    val next = SessionState.Active(stores)
+                    if (!_state.value.sameContentAs(next)) _state.value = next
                 }
             }
         } catch (e: CancellationException) {

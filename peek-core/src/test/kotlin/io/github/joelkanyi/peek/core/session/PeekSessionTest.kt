@@ -33,6 +33,7 @@ import io.github.joelkanyi.peek.core.model.KvValue
 import io.github.joelkanyi.peek.core.testing.FakeTransport
 import io.github.joelkanyi.peek.core.transport.TransportException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -238,6 +239,27 @@ class PeekSessionTest {
         assertThat(second.diff.changed).contains("count")
 
         s.stopPolling()
+    }
+
+    @Test
+    fun `an unchanged poll does not emit a new active state`() = runTest(UnconfinedTestDispatcher()) {
+        val path = "files/datastore/s.preferences_pb"
+        val transport = FakeTransport(files = mapOf(path to preferencesPb("count" to vInt(1))))
+        val s = PeekSession(transport, device, pkg, this, now = { 0L }, retryDelayMs = 1)
+
+        val emissions = mutableListOf<SessionState>()
+        val collector = launch { s.state.collect { emissions.add(it) } }
+
+        s.startPolling(intervalMs = 1_000)
+        advanceTimeBy(1_001)
+        runCurrent()
+        advanceTimeBy(1_000)
+        runCurrent()
+
+        s.stopPolling()
+        collector.cancel()
+
+        assertThat(emissions.filterIsInstance<SessionState.Active>()).hasSize(1)
     }
 
     @Test
