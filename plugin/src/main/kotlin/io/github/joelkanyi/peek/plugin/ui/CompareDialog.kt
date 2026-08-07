@@ -82,7 +82,12 @@ internal class CompareDialog(project: Project, private val captures: List<Captur
                 },
             )
             delta.added.forEach { storeNode.add(DefaultMutableTreeNode("+ $it  (added)")) }
-            delta.changed.forEach { storeNode.add(DefaultMutableTreeNode("~ $it  (changed)")) }
+            delta.changed.forEach { change ->
+                val changeNode = DefaultMutableTreeNode("~ ${change.key}  (changed)")
+                changeNode.add(DefaultMutableTreeNode("before: ${change.before.display()}"))
+                changeNode.add(DefaultMutableTreeNode("after:  ${change.after.display()}"))
+                storeNode.add(changeNode)
+            }
             delta.removed.forEach { storeNode.add(DefaultMutableTreeNode("- $it  (removed)")) }
             root.add(storeNode)
         }

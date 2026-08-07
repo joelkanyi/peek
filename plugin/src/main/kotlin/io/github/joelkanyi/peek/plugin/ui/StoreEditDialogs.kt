@@ -41,7 +41,7 @@ internal fun promptValue(project: Project, key: String, current: KvValue): KvVal
             project,
             "Value for \"$key\"",
             "Edit boolean",
-            arrayOf("true", "false"),
+            arrayOf("true", "false", "Cancel"),
             if (current.value) 0 else 1,
             null,
         )

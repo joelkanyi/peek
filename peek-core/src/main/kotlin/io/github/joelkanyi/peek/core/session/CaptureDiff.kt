@@ -21,11 +21,19 @@ import io.github.joelkanyi.peek.core.model.AppPackage
 import io.github.joelkanyi.peek.core.model.Capture
 import io.github.joelkanyi.peek.core.model.CapturedStore
 import io.github.joelkanyi.peek.core.model.KvEntry
+import io.github.joelkanyi.peek.core.model.KvValue
 import io.github.joelkanyi.peek.core.model.StoreHandle
 import io.github.joelkanyi.peek.core.model.sameAs
 
 /** Whether a store existed in the before capture, the after capture, or both. */
 public enum class Presence { BOTH, BEFORE_ONLY, AFTER_ONLY }
+
+/** A key whose value differs between two captures, keeping both sides. */
+public class ValueChange internal constructor(
+    public val key: String,
+    public val before: KvValue,
+    public val after: KvValue,
+)
 
 /** What changed in one store between two captures. */
 public class StoreDelta internal constructor(
@@ -33,7 +41,7 @@ public class StoreDelta internal constructor(
     public val displayName: String,
     public val presence: Presence,
     public val added: Set<String>,
-    public val changed: Set<String>,
+    public val changed: List<ValueChange>,
     public val removed: Set<String>,
 ) {
     public val isEmpty: Boolean get() = added.isEmpty() && changed.isEmpty() && removed.isEmpty()
@@ -55,11 +63,12 @@ public fun diffCaptures(before: Capture, after: Capture): CaptureDiff {
                 val bMap = decode(b).associate { it.key to it.value }
                 val aMap = decode(a).associate { it.key to it.value }
                 val changed = aMap.keys.intersect(bMap.keys)
-                    .filterTo(LinkedHashSet()) { !bMap.getValue(it).sameAs(aMap.getValue(it)) }
+                    .filter { !bMap.getValue(it).sameAs(aMap.getValue(it)) }
+                    .map { ValueChange(it, bMap.getValue(it), aMap.getValue(it)) }
                 StoreDelta(path, a.displayName, Presence.BOTH, aMap.keys - bMap.keys, changed, bMap.keys - aMap.keys)
             }
-            a != null -> StoreDelta(path, a.displayName, Presence.AFTER_ONLY, decode(a).map { it.key }.toSet(), emptySet(), emptySet())
-            else -> StoreDelta(path, b!!.displayName, Presence.BEFORE_ONLY, emptySet(), emptySet(), decode(b).map { it.key }.toSet())
+            a != null -> StoreDelta(path, a.displayName, Presence.AFTER_ONLY, decode(a).map { it.key }.toSet(), emptyList(), emptySet())
+            else -> StoreDelta(path, b!!.displayName, Presence.BEFORE_ONLY, emptySet(), emptyList(), decode(b).map { it.key }.toSet())
         }
     }
     return CaptureDiff(deltas)
