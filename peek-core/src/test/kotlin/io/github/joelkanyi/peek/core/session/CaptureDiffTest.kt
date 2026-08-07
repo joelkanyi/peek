@@ -20,6 +20,7 @@ import assertk.assertions.contains
 import assertk.assertions.isEqualTo
 import io.github.joelkanyi.peek.core.model.Capture
 import io.github.joelkanyi.peek.core.model.CapturedStore
+import io.github.joelkanyi.peek.core.model.KvValue
 import io.github.joelkanyi.peek.core.model.StoreType
 import okio.ByteString.Companion.encodeUtf8
 import kotlin.test.Test
@@ -52,7 +53,9 @@ class CaptureDiffTest {
 
         val p = diff.stores.first { it.path == "shared_prefs/p.xml" }
         assertThat(p.presence).isEqualTo(Presence.BOTH)
-        assertThat(p.changed).contains("a")
+        val aChange = p.changed.first { it.key == "a" }
+        assertThat((aChange.before as KvValue.IntValue).value).isEqualTo(1)
+        assertThat((aChange.after as KvValue.IntValue).value).isEqualTo(2)
         assertThat(p.added).contains("added")
         assertThat(p.removed).contains("gone")
 
