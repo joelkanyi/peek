@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+## [0.1.2]
+
+### Fixed
+- The store view no longer flickers or drops its selection during auto-refresh. A poll that finds no changes leaves the UI untouched, and a transient adb error keeps the loaded stores on screen instead of clearing the panel.
+
 ## [0.1.1]
 
 ### Changed
