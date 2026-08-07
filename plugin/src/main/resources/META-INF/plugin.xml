@@ -23,6 +23,7 @@
             anchor="bottom"
             icon="AllIcons.Toolwindows.ToolWindowInspection"
             factoryClass="io.github.joelkanyi.peek.plugin.ui.PeekToolWindowFactory"/>
+        <notificationGroup id="Peek" displayType="BALLOON"/>
     </extensions>
 
     <extensions defaultExtensionNs="io.github.joelkanyi.peek">

@@ -16,6 +16,9 @@
 package io.github.joelkanyi.peek.plugin.ui
 
 import com.intellij.icons.AllIcons
+import com.intellij.notification.NotificationAction
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionToolbar
@@ -72,11 +75,13 @@ import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import javax.swing.ButtonGroup
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListModel
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JTable
+import javax.swing.JToggleButton
 import javax.swing.ListSelectionModel
 import javax.swing.table.DefaultTableCellRenderer
 
@@ -114,6 +119,8 @@ internal class PeekPanel(private val project: Project) {
 
     private var suppressEvents = false
     private var visible = true
+    private var allStores: List<StoreState> = emptyList()
+    private var typeFilter: StoreType? = null
     private var currentHandle: StoreHandle? = null
     private var highlightAdded: Set<String> = emptySet()
     private var highlightChanged: Set<String> = emptySet()
@@ -149,8 +156,13 @@ internal class PeekPanel(private val project: Project) {
         detailCards.add(JBScrollPane(table), CARD_TABLE)
         detailCards.add(JBScrollPane(tree), CARD_TREE)
 
+        val leftPanel = JPanel(BorderLayout()).apply {
+            add(buildFilterBar(), BorderLayout.NORTH)
+            add(JBScrollPane(storeList), BorderLayout.CENTER)
+        }
+
         val splitter = OnePixelSplitter(false, 0.28f).apply {
-            firstComponent = JBScrollPane(storeList)
+            firstComponent = leftPanel
             secondComponent = detailCards
         }
 
@@ -200,6 +212,7 @@ internal class PeekPanel(private val project: Project) {
             editActions.forEach { add(it) }
             addSeparator()
             add(SnapshotAction())
+            add(StopAction())
             add(MoreGroup())
         }
         val toolbar = ActionManager.getInstance().createActionToolbar("Peek.Toolbar", group, true)
@@ -324,9 +337,35 @@ internal class PeekPanel(private val project: Project) {
     }
 
     fun onVisibilityChanged(nowVisible: Boolean) {
+        val wasVisible = visible
         visible = nowVisible
         val current = session ?: return
-        if (nowVisible) current.startPolling() else current.stopPolling()
+        // Polling keeps running while hidden so Peek stays live in the background; just tell the user once per hide.
+        if (nowVisible) {
+            current.startPolling()
+        } else if (wasVisible) {
+            notifyBackground()
+        }
+    }
+
+    private fun notifyBackground() {
+        val device = (deviceCombo.selectedItem as? Device)?.model ?: currentApp()
+        NotificationGroupManager.getInstance()
+            .getNotificationGroup("Peek")
+            .createNotification(
+                PeekBundle.message("peek.notify.background.title"),
+                PeekBundle.message("peek.notify.background.text", device),
+                NotificationType.INFORMATION,
+            )
+            .addAction(NotificationAction.createSimpleExpiring(PeekBundle.message("peek.notify.background.stop")) { onStop() })
+            .notify(project)
+    }
+
+    private fun onStop() {
+        stopSession()
+        clearStores()
+        live = false
+        status(PeekBundle.message("peek.status.stopped"))
     }
 
     private fun render(state: SessionState) {
@@ -343,25 +382,37 @@ internal class PeekPanel(private val project: Project) {
             }
             is SessionState.Active -> {
                 table.setPaintBusy(false)
-                val keepPath = storeList.selectedValue?.handle?.path
-                val samePaths = storeListModel.size() == state.stores.size &&
-                    state.stores.indices.all { storeListModel.get(it).handle.path == state.stores[it].handle.path }
-                suppressEvents = true
-                if (samePaths) {
-                    // Refresh each row in place so the list never blinks and the selection is never dropped on a poll.
-                    state.stores.forEachIndexed { i, store -> storeListModel.set(i, store) }
-                } else {
-                    storeListModel.clear()
-                    state.stores.forEach { storeListModel.addElement(it) }
-                }
-                suppressEvents = false
+                allStores = state.stores
                 status(PeekBundle.message(if (live) "peek.status.storesLive" else "peek.status.stores", state.stores.size))
-                when {
-                    storeListModel.isEmpty -> tableModel.setEntries(emptyList())
-                    samePaths -> showSelectedStore()
-                    else -> storeList.selectedIndex = state.stores.indexOfFirst { it.handle.path == keepPath }.coerceAtLeast(0)
-                }
+                renderStores()
             }
+        }
+    }
+
+    private fun visibleStores(): List<StoreState> =
+        typeFilter?.let { type -> allStores.filter { it.handle.type == type } } ?: allStores
+
+    private fun renderStores() {
+        val visibleStores = visibleStores()
+        val keepPath = storeList.selectedValue?.handle?.path
+        val samePaths = storeListModel.size() == visibleStores.size &&
+            visibleStores.indices.all { storeListModel.get(it).handle.path == visibleStores[it].handle.path }
+        suppressEvents = true
+        if (samePaths) {
+            // Refresh each row in place so the list never blinks and the selection is never dropped on a poll.
+            visibleStores.forEachIndexed { i, store -> storeListModel.set(i, store) }
+        } else {
+            storeListModel.clear()
+            visibleStores.forEach { storeListModel.addElement(it) }
+        }
+        suppressEvents = false
+        when {
+            storeListModel.isEmpty -> {
+                currentHandle = null
+                tableModel.setEntries(emptyList())
+            }
+            samePaths -> showSelectedStore()
+            else -> storeList.selectedIndex = visibleStores.indexOfFirst { it.handle.path == keepPath }.coerceAtLeast(0)
         }
     }
 
@@ -485,6 +536,7 @@ internal class PeekPanel(private val project: Project) {
         suppressEvents = true
         storeListModel.clear()
         suppressEvents = false
+        allStores = emptyList()
         currentHandle = null
         highlightAdded = emptySet()
         highlightChanged = emptySet()
@@ -512,6 +564,25 @@ internal class PeekPanel(private val project: Project) {
         is PeekError.FileVanished -> PeekBundle.message("peek.status.unparseable", error.path)
         is PeekError.ParseFailed -> PeekBundle.message("peek.status.unparseable", error.reason)
         is PeekError.TransportFailure -> PeekBundle.message("peek.status.adbError", error.message)
+    }
+
+    private fun buildFilterBar(): JComponent {
+        val bar = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(2), JBUI.scale(2)))
+        val group = ButtonGroup()
+        FILTERS.forEach { (label, type) ->
+            val button = JToggleButton(label).apply {
+                isSelected = typeFilter == type
+                addActionListener {
+                    if (typeFilter != type) {
+                        typeFilter = type
+                        renderStores()
+                    }
+                }
+            }
+            group.add(button)
+            bar.add(button)
+        }
+        return bar
     }
 
     private inner class RefreshAction : AnAction(PeekBundle.message("peek.action.refresh"), null, AllIcons.Actions.Refresh) {
@@ -546,6 +617,14 @@ internal class PeekPanel(private val project: Project) {
         override fun actionPerformed(e: AnActionEvent) = onSnapshot()
     }
 
+    private inner class StopAction : AnAction(PeekBundle.message("peek.action.stop"), null, AllIcons.Actions.Suspend) {
+        override fun getActionUpdateThread() = ActionUpdateThread.EDT
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = session != null
+        }
+        override fun actionPerformed(e: AnActionEvent) = onStop()
+    }
+
     private inner class AddPathAction : AnAction(PeekBundle.message("peek.action.addPath"), null, AllIcons.Nodes.Folder) {
         override fun getActionUpdateThread() = ActionUpdateThread.EDT
         override fun update(e: AnActionEvent) {
@@ -573,6 +652,12 @@ internal class PeekPanel(private val project: Project) {
         const val DEVICE_POLL_MS = 3_000L
         const val CARD_TABLE = "table"
         const val CARD_TREE = "tree"
+        val FILTERS: List<Pair<String, StoreType?>> = listOf(
+            "All" to null,
+            "SharedPreferences" to StoreType.SHARED_PREFERENCES,
+            "DataStore" to StoreType.PREFERENCES_DATASTORE,
+            "Proto" to StoreType.PROTO_DATASTORE,
+        )
         val ADDED_BG = JBColor(Color(0xDD, 0xF3, 0xE0), Color(0x2B, 0x3B, 0x2E))
         val CHANGED_BG = JBColor(Color(0xFB, 0xF1, 0xD0), Color(0x3B, 0x36, 0x22))
     }

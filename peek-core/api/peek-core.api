@@ -327,7 +327,7 @@ public final class io/github/joelkanyi/peek/core/session/SessionState$Paused : i
 
 public final class io/github/joelkanyi/peek/core/session/StoreDelta {
 	public final fun getAdded ()Ljava/util/Set;
-	public final fun getChanged ()Ljava/util/Set;
+	public final fun getChanged ()Ljava/util/List;
 	public final fun getDisplayName ()Ljava/lang/String;
 	public final fun getPath ()Ljava/lang/String;
 	public final fun getPresence ()Lio/github/joelkanyi/peek/core/session/Presence;
@@ -369,6 +369,12 @@ public final class io/github/joelkanyi/peek/core/session/StoreState$Unparseable 
 	public fun getHandle ()Lio/github/joelkanyi/peek/core/model/StoreHandle;
 	public final fun getHexPreview ()Ljava/lang/String;
 	public final fun getReason ()Ljava/lang/String;
+}
+
+public final class io/github/joelkanyi/peek/core/session/ValueChange {
+	public final fun getAfter ()Lio/github/joelkanyi/peek/core/model/KvValue;
+	public final fun getBefore ()Lio/github/joelkanyi/peek/core/model/KvValue;
+	public final fun getKey ()Ljava/lang/String;
 }
 
 public abstract interface class io/github/joelkanyi/peek/core/session/WriteOutcome {
