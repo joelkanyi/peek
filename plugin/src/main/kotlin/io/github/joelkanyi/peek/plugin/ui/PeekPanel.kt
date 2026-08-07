@@ -120,6 +120,7 @@ internal class PeekPanel(private val project: Project) {
     private var session: StoreSession? = null
     private var live: Boolean = false
     private var collectJob: Job? = null
+    private var startJob: Job? = null
 
     val component: JComponent = build()
 
@@ -286,13 +287,18 @@ internal class PeekPanel(private val project: Project) {
         stopSession()
         table.setPaintBusy(true)
         status(PeekBundle.message("peek.status.loading"))
-        scope.launch {
+        startJob = scope.launch {
             val agent = withContext(Dispatchers.IO) { AgentConnector.open(device.serial, pkg.packageName) }
                 ?.let { socket -> AgentSession(socket, pkg, scope).also { it.connect() } }
             val agentReady = agent != null &&
                 withTimeoutOrNull(AGENT_HANDSHAKE_MS) { agent.state.first { it is SessionState.Active } } != null
 
             withContext(Dispatchers.EDT) {
+                // A newer startSession cancelled this one during the handshake; drop it so only one session ever runs.
+                if (!isActive) {
+                    agent?.close()
+                    return@withContext
+                }
                 val chosen: StoreSession = if (agentReady) {
                     live = true
                     agent!!
@@ -311,6 +317,7 @@ internal class PeekPanel(private val project: Project) {
     }
 
     private fun stopSession() {
+        startJob?.cancel()
         collectJob?.cancel()
         session?.close()
         session = null
@@ -326,13 +333,12 @@ internal class PeekPanel(private val project: Project) {
         when (state) {
             SessionState.Connecting -> status(PeekBundle.message("peek.status.loading"))
             is SessionState.Failed -> {
+                // Transient adb/run-as hiccups flap through here; keep the last good view and only surface the error.
                 table.setPaintBusy(false)
-                clearStores()
                 status(errorMessage(state.error))
             }
             is SessionState.Paused -> {
                 table.setPaintBusy(false)
-                clearStores()
                 status(PeekBundle.message("peek.status.paused"))
             }
             is SessionState.Active -> {
