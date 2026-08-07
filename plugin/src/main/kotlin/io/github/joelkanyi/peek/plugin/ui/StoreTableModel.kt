@@ -21,9 +21,14 @@ import javax.swing.table.AbstractTableModel
 internal class StoreTableModel : AbstractTableModel() {
 
     private var entries: List<KvEntry> = emptyList()
+    private var rows: List<List<String>> = emptyList()
 
     fun setEntries(entries: List<KvEntry>) {
+        val rows = entries.map { listOf(it.key, it.value.typeLabel(), it.value.display()) }
         this.entries = entries
+        // A poll that re-reads the same store hands back visually identical rows; repainting them flashes the table, so skip it.
+        if (rows == this.rows) return
+        this.rows = rows
         fireTableDataChanged()
     }
 

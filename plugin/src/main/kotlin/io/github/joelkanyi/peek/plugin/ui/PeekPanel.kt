@@ -120,6 +120,7 @@ internal class PeekPanel(private val project: Project) {
     private var session: StoreSession? = null
     private var live: Boolean = false
     private var collectJob: Job? = null
+    private var startJob: Job? = null
 
     val component: JComponent = build()
 
@@ -286,13 +287,18 @@ internal class PeekPanel(private val project: Project) {
         stopSession()
         table.setPaintBusy(true)
         status(PeekBundle.message("peek.status.loading"))
-        scope.launch {
+        startJob = scope.launch {
             val agent = withContext(Dispatchers.IO) { AgentConnector.open(device.serial, pkg.packageName) }
                 ?.let { socket -> AgentSession(socket, pkg, scope).also { it.connect() } }
             val agentReady = agent != null &&
                 withTimeoutOrNull(AGENT_HANDSHAKE_MS) { agent.state.first { it is SessionState.Active } } != null
 
             withContext(Dispatchers.EDT) {
+                // A newer startSession cancelled this one during the handshake; drop it so only one session ever runs.
+                if (!isActive) {
+                    agent?.close()
+                    return@withContext
+                }
                 val chosen: StoreSession = if (agentReady) {
                     live = true
                     agent!!
@@ -311,6 +317,7 @@ internal class PeekPanel(private val project: Project) {
     }
 
     private fun stopSession() {
+        startJob?.cancel()
         collectJob?.cancel()
         session?.close()
         session = null
@@ -326,25 +333,34 @@ internal class PeekPanel(private val project: Project) {
         when (state) {
             SessionState.Connecting -> status(PeekBundle.message("peek.status.loading"))
             is SessionState.Failed -> {
+                // Transient adb/run-as hiccups flap through here; keep the last good view and only surface the error.
                 table.setPaintBusy(false)
-                clearStores()
                 status(errorMessage(state.error))
             }
             is SessionState.Paused -> {
                 table.setPaintBusy(false)
-                clearStores()
                 status(PeekBundle.message("peek.status.paused"))
             }
             is SessionState.Active -> {
                 table.setPaintBusy(false)
                 val keepPath = storeList.selectedValue?.handle?.path
+                val samePaths = storeListModel.size() == state.stores.size &&
+                    state.stores.indices.all { storeListModel.get(it).handle.path == state.stores[it].handle.path }
                 suppressEvents = true
-                storeListModel.clear()
-                state.stores.forEach { storeListModel.addElement(it) }
-                val keepIndex = state.stores.indexOfFirst { it.handle.path == keepPath }
+                if (samePaths) {
+                    // Refresh each row in place so the list never blinks and the selection is never dropped on a poll.
+                    state.stores.forEachIndexed { i, store -> storeListModel.set(i, store) }
+                } else {
+                    storeListModel.clear()
+                    state.stores.forEach { storeListModel.addElement(it) }
+                }
                 suppressEvents = false
                 status(PeekBundle.message(if (live) "peek.status.storesLive" else "peek.status.stores", state.stores.size))
-                if (!storeListModel.isEmpty) storeList.selectedIndex = if (keepIndex >= 0) keepIndex else 0 else tableModel.setEntries(emptyList())
+                when {
+                    storeListModel.isEmpty -> tableModel.setEntries(emptyList())
+                    samePaths -> showSelectedStore()
+                    else -> storeList.selectedIndex = state.stores.indexOfFirst { it.handle.path == keepPath }.coerceAtLeast(0)
+                }
             }
         }
     }
@@ -374,9 +390,12 @@ internal class PeekPanel(private val project: Project) {
             return
         }
         currentHandle = store.handle
+        val highlightsChanged = store.diff.added != highlightAdded || store.diff.changed != highlightChanged
         highlightAdded = store.diff.added
         highlightChanged = store.diff.changed
         tableModel.setEntries(store.snapshot.entries)
+        // setEntries only repaints when the rows differ; a highlight that just cleared needs its own repaint.
+        if (highlightsChanged) table.repaint()
         showCard(CARD_TABLE)
         val changedCount = store.diff.added.size + store.diff.changed.size
         status(
