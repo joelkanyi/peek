@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+## [0.1.3]
+
+### Added
+- Filter the store list by type: All, SharedPreferences, DataStore, and Proto.
+- A Stop Peek action ends the current session and clears the view.
+
+### Changed
+- Peek keeps monitoring while the tool window is hidden and posts a background notification with a Stop link, instead of pausing.
+- Comparing two snapshots now shows the before and after values for each changed key.
+
+### Fixed
+- The boolean value editor has a Cancel button.
+
 ## [0.1.2]
 
 ### Fixed
