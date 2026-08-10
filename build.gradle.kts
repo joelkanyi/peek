@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.bcv) apply false
     alias(libs.plugins.mavenPublish) apply false
     alias(libs.plugins.spotless) apply false
+    alias(libs.plugins.protobuf) apply false
 }
 
 subprojects {

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+option java_package = "io.github.joelkanyi.peek.sample.proto";
+option java_multiple_files = true;
+
+// A realistic-looking user profile stored in Proto DataStore. All values seeded
+// at runtime are fake.
+message UserProfile {
+  string user_id = 1;
+  string full_name = 2;
+  string email = 3;
+  string phone = 4;
+  Tier tier = 5;
+  int32 loyalty_points = 6;
+  int64 member_since_epoch_ms = 7;
+  bool marketing_opt_in = 8;
+  double wallet_balance = 9;
+  string preferred_currency = 10;
+  repeated string recent_searches = 11;
+  Address default_address = 12;
+  map<string, bool> feature_flags = 13;
+  NotificationSettings notifications = 14;
+
+  enum Tier {
+    TIER_UNSPECIFIED = 0;
+    BRONZE = 1;
+    SILVER = 2;
+    GOLD = 3;
+  }
+
+  message Address {
+    string label = 1;
+    string street = 2;
+    string city = 3;
+    string country_code = 4;
+    string postal_code = 5;
+    double latitude = 6;
+    double longitude = 7;
+  }
+
+  message NotificationSettings {
+    bool push_enabled = 1;
+    bool email_enabled = 2;
+    bool sms_enabled = 3;
+    repeated string muted_topics = 4;
+  }
+}

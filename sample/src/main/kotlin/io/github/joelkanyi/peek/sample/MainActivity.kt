@@ -20,29 +20,41 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
-/** Writes and mutates SharedPreferences so Peek has real, changing data to show. */
+/** Seeds every store type Peek reads with realistic, fake data, then lets you mutate a value live. */
 class MainActivity : Activity() {
+
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val prefs = getSharedPreferences("sample_prefs", MODE_PRIVATE)
-        val launches = prefs.getInt("launch_count", 0) + 1
-        prefs.edit()
-            .putInt("launch_count", launches)
-            .putString("last_user", "joel")
-            .putBoolean("dark_mode", true)
-            .putStringSet("tags", setOf("beta", "offline"))
-            .apply()
+        val now = System.currentTimeMillis()
+        val session = getSharedPreferences("app_settings", MODE_PRIVATE)
+        val launchCount = session.getInt("app_launch_count", 0) + 1
 
-        val label = TextView(this).apply { text = "Peek Sample\nlaunch_count = $launches\nTap to bump a counter." }
+        seedSharedPreferences(launchCount, now)
+        seedMultiplatformSettings(now)
+        scope.launch(Dispatchers.IO) {
+            seedPreferencesDataStore()
+            seedUserProfile(now)
+        }
+
+        val prefs = getSharedPreferences("user_session", MODE_PRIVATE)
+        val label = TextView(this).apply {
+            text = "Peek Sample\nSeeded SharedPreferences, DataStore, Proto, and Multiplatform Settings.\nlaunch #$launchCount"
+        }
         val bump = Button(this).apply {
-            text = "Bump counter"
+            text = "Add to cart"
             setOnClickListener {
-                val next = prefs.getInt("counter", 0) + 1
-                prefs.edit().putInt("counter", next).apply()
-                label.text = "Peek Sample\nlaunch_count = $launches\ncounter = $next"
+                val next = prefs.getInt("cart_items_added", 0) + 1
+                prefs.edit().putInt("cart_items_added", next).apply()
+                label.text = "Peek Sample\nWatch the value change live in Peek.\ncart_items_added = $next"
             }
         }
 
@@ -54,5 +66,10 @@ class MainActivity : Activity() {
                 addView(bump)
             },
         )
+    }
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
     }
 }
