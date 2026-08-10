@@ -12,7 +12,7 @@ multiplatformSettings = "1.2.0"
 # plugins
 changelog = "2.5.0"
 intelliJPlatform = "2.5.0"
-kotlin = "2.1.20"
+kotlin = "2.4.10"
 bcv = "0.18.1"
 agp = "8.7.3"
 mavenPublish = "0.29.0"
