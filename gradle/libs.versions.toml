@@ -6,7 +6,7 @@ okio = "3.9.1"
 coroutines = "1.11.0"
 assertk = "0.28.1"
 datastore = "1.1.1"
-protobuf = "3.25.3"
+protobuf = "4.36.0"
 multiplatformSettings = "1.2.0"
 
 # plugins
